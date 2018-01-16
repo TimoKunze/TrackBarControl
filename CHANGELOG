@@ -1,0 +1,162 @@
+Version 1.7.3 - DD/MM/YYYY
+
+- Project published on GitHub.
+
+
+
+Version 1.7.2 - 31/07/2016
+
+- Fixed some memory leaks that occurred when firing certain events.
+
+
+
+Version 1.7.1 - 27/01/2016
+
+- FIX: The control could crash during OLE drag'n'drop.
+- FIX: The control could crash the other process during OLE drag'n'drop, especially when IOLEDataObject::SetDropDescription() had been called.
+
+
+
+Version 1.7.0 - 20/01/2016
+
+- Added the ITrackBar::FinishOLEDragDrop method. It should not be used if not really needed. It can be used to hide the drag image if execution of the OLEDragDrop event takes a long time or if a message is displayed from within this event.
+- Initial support for Windows 10.
+
+
+
+Version 1.6.0 - 24/07/2014
+
+- Added the XClick, and XDblClick events for support of the extended mouse buttons.
+- Added the MouseWheel event for handling mouse wheel rotations.
+- Extended the Mouse* events to support the extended mouse buttons.
+- Slightly reduced GDI resource usage.
+- Reactivated data-binding capabilities. When the library is registered, it will call regtlib.exe msdatsrc.tlb before registering itself. This seems to fix the mess caused by the broken Windows Update from the beginning of 2013.
+- Initial support for Windows 8.1.
+
+
+
+Version 1.5.2 - 27/03/2013
+
+- FIX: The ResizedControlWindow event was not fired when it should have been fired.
+- Disabled data-binding capabilities as they cause "Object library not registered" errors when adding the control library to the project. This problem might be related to a recent Windows Update.
+- Initial support for Windows 8.
+
+
+
+Version 1.5.1 - 11/03/2012
+
+- Changed the drawing code for the case that the client application uses version 6.x of comctl32.dll. This should fix drawing issues.
+- Reimplemented the subclassing code of the VB6 samples to make it more robust.
+
+
+
+Version 1.5.0 - 01/11/2011
+
+- Added the ITrackBar::DetectDoubleClicks property to completely deactivate double clicks and handle them as two single clicks instead.
+
+
+
+Version 1.4.1 - 21/05/2011
+
+- FIX: Disabling the control did not move the keyboard focus to the next control in the tab order.
+- FIX: The ResizedControlWindow event was fired when actually nothing had changed.
+
+
+
+Version 1.4.0 - 08/01/2011
+
+- FIX: Due do a bug in Microsoft ATL, the control could lose keyboard focus when it shouldn't. This problem occured in MDI applications only. Many thanks to Peter Schellenbach for his help.
+- Switched to Visual C++ 2010 and dropped support for Windows 2000.
+
+
+
+Version 1.3.2 - 07/11/2010
+
+- FIX: Visual Basic 6 didn't raise the Validate event correctly.
+
+
+
+Version 1.3.1 - 10/07/2010
+
+- FIX: IOLEDataObject::SetDropDescription could cause crashes in other programs.
+
+
+
+Version 1.3.0 - 01/03/2010
+
+- Added the ITrackBar::BackgroundDrawMode property.
+- FIX: Setting the ITrackBar::CurrentPosition property at runtime could fail.
+- New VB6 sample "Volume Control".
+
+
+
+Version 1.2.3 - 02/01/2010
+
+- Fixed a potential problem with persistance.
+- Improved support for Aero drag images.
+- Improved performance.
+- FIX: If the control was placed on a Form for which the KeyPreview feature was activated, the Form_Key* handler didn't receive key strokes like all Alt+PgDown or Alt+Left, if the control had the keyboard focus.
+- FIX: The 'shift' parameter that many events have, often missed the ALT key.
+- Deploy (stripped) symbols with the binaries to make debugging easier. This are the pdb files in case you wonder.
+
+
+
+Version 1.2.2 - 11/07/2009
+
+- Initial support for Windows 7.
+- Extended the DropDescriptionIconConstants enumeration by 'ddiUseDefault'.
+- FIX: The TAB key didn't move the focus to the next control if the control was placed inside a VB6 UserControl.
+- FIX: Drop descriptions didn't work as expected if the drag source was a 64 bit app.
+- Changing the BackColor property does not recreate the control window any longer.
+- Massively reduced the usage of GDI handles.
+- Improved performance.
+- Made some internal changes that will make it easier for me to keep binary compatibility in future.
+
+
+
+Version 1.2.1 - 31/10/2008
+
+- FIX: Ignore calls to IOLEDataObject::SetDropDescription() if the drag image is in classic style.
+- Fixed some GDI handle leaks.
+- Fixed some drawing glitches.
+- Slightly changed handling of the situation where the user presses a mouse button, drags the mouse out of the control's client area and releases the button.
+- Removed most of the data-binding stuff (it was probably broken anyway) and fixed the remaining parts.
+- Switched to Visual C++ 2008 and dropped support for Windows 9x, Me and NT 4.0.
+- Improved the documentation.
+
+
+
+Version 1.2.0 - 05/12/2007
+
+- Added the IOLEDataObject::GetDropDescription() method.
+- Added the IOLEDataObject::SetDropDescription() method.
+- FIX: Keyboard input wasn't processed if the control was placed within a VB6 UserControl.
+- FIX: On Windows 98/ME tooltips didn't work.
+- FIX: Changes were not applied implicitly when jumping between multiple instances of the control with the property pages opened.
+- Improved the documentation.
+
+
+
+Version 1.1.0 - 28/02/2007
+
+- Added the _ITrackBarEvents::PositionChanging event.
+- Decreased the binaries' size.
+- Improved the documentation.
+- Ported the WTL samples to WTL 8.0.
+- Made the samples DPI aware.
+- Added the "Transparent Background" samples.
+- Linked the new bug tracking system.
+
+
+
+Version 1.0.1 - 23/09/2006
+
+- FIX: The "Visible" property didn't work as expected.
+- FIX: The control didn't react as expected to keyboard input in some container controls.
+- Improved setup.
+
+
+
+Version 1.0.0 - 21/06/2006
+
+- First public release.
