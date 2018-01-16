@@ -1,0 +1,12 @@
+The following parts of the msctls_trackbar32 API (Windows 10) are not used:
+
+Control styles:
+---------------
+
+Messages:
+---------
+- TBM_GETTIC (https://msdn.microsoft.com/en-us/library/bb760205.aspx)
+	-> currently we have no use for this message
+- TBM_SETPOSNOTIFY (https://msdn.microsoft.com/en-us/library/dd318034.aspx)
+	-> requires Windows 7 or newer
+	-> not clear what it is doing

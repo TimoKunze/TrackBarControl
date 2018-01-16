@@ -1,0 +1,25 @@
+HKCR
+{
+	TrackBarCtlU.CommonProperties.1 = s 'TimoSoft CommonProperties Class 1.7 (Unicode)'
+	{
+		CLSID = s '{FF06D8DD-FD43-4fb7-AAB5-DB2611311034}'
+	}
+	TrackBarCtlU.CommonProperties = s 'TimoSoft CommonProperties Class (Unicode)'
+	{
+		CLSID = s '{FF06D8DD-FD43-4fb7-AAB5-DB2611311034}'
+		CurVer = s 'TrackBarCtlU.CommonProperties.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {FF06D8DD-FD43-4fb7-AAB5-DB2611311034} = s 'TimoSoft CommonProperties Class (Unicode)'
+		{
+			ProgID = s 'TrackBarCtlU.CommonProperties.1'
+			VersionIndependentProgID = s 'TrackBarCtlU.CommonProperties'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{956B5A46-C53F-45a7-AF0E-EC2E1CC9B567}'
+		}
+	}
+}

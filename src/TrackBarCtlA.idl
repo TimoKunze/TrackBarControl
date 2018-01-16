@@ -1,0 +1,2238 @@
+//////////////////////////////////////////////////////////////////////
+/// \mainpage TrackBar Documentation
+///
+/// \section intro_sec Introduction
+///
+/// %TrackBar is an ActiveX control that wraps the \c msctls_trackbar32 window class. It is optimized
+/// for Visual Basic 6.0, but should also work in any other environment that supports COM controls.
+///
+/// \section basics_sec Basics
+///
+/// The control superclasses the native track bar window class of Windows: \c msctls_trackbar32. Although
+/// I tried to wrap all features of this window class (status: Windows 10), some things may be missing.
+/// In these cases you may try using the Win32 API and handle the control as a native track bar window.
+///
+/// \section reqs_sec Requirements
+///
+/// %TrackBar ANSI runs on the following operating systems:
+/// - Windows XP (SP3 or later) - <strong>limited support</strong>
+/// - Windows Server 2003 (SP2 or later) - <strong>limited support</strong>
+/// - Windows Vista (SP2 or later) - <strong>limited support</strong>
+/// - Windows Server 2008 (SP2 or later) - <strong>limited support</strong>
+/// - Windows 7 (SP1 or later) - <strong>limited support</strong>
+/// - Windows Server 2008 R2 (SP1 or later) - <strong>limited support</strong>
+/// - Windows 8 - <strong>limited support</strong>
+/// - Windows Server 2012 - <strong>limited support</strong>
+/// - Windows 8.1 - <strong>limited support</strong>
+/// - Windows Server 2012 R2 - <strong>limited support</strong>
+/// - Windows 10 - <strong>limited support</strong>
+/// - Windows Server 2016 - <strong>limited support</strong>
+///
+/// Some features have additional requirements which are mentioned in the affected feature's
+/// documentation.\n
+/// Limited support means, that I won't invest much work to support those systems. If a feature works on
+/// a system marked with "limited support" - fine; if it does not and it's easy to fix, I'll fix it, but if
+/// it's difficult to fix, I probably won't fix it. Also I will test the control much less on those systems.
+///
+/// \section support_sec Support
+///
+/// Although there's no entitlement to support, you've good chances to get help if you either post
+/// to the <a href="https://www.timosoft-software.de/forum/viewforum.php?f=30">forums</a> or
+/// <a href="mailto:Timo@TimoSoft-Software.de">send me a mail</a>.\n
+/// Bugs and feature requests should be entered into the <a href="https://bugtracker.timosoft-software.de">bug tracking system</a>.
+///
+/// \section lic_sec License
+///
+/// <pre>
+///      MIT License
+///
+///      Copyright (c) 2006-2018 Timo Kunze
+///
+///      Permission is hereby granted, free of charge, to any person obtaining a copy
+///      of this software and associated documentation files (the "Software"), to deal
+///      in the Software without restriction, including without limitation the rights
+///      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+///      copies of the Software, and to permit persons to whom the Software is
+///      furnished to do so, subject to the following conditions:
+///
+///      The above copyright notice and this permission notice shall be included in all
+///      copies or substantial portions of the Software.
+///
+///      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+///      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+///      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+///      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+///      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+///      OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+///      SOFTWARE.
+/// </pre>
+///
+/// \section acks_sec Acknowledgements
+///
+/// Thanks go to:
+/// - <a href="https://www.winehq.com">Wine Headquarters</a>, because Wine helped me a lot on
+///   understanding how Windows is working.
+/// - Microsoft, for ATL, WTL and Visual Studio - great libraries and a great IDE
+/// - <a href="https://www.geoffchappell.com">Geoff Chappell</a>, for his website about undocumented Win32
+///   API stuff.
+/// - Igor Tandetnik, for his great help on learning ATL and WTL
+/// - Dimitri van Heesch, for Doxygen
+/// - <a href="http://www.zabkat.com/">Nikos Bozinis</a>, for his awesome help with the Vista drag'n'drop
+///   stuff.
+/// - <a href="https://www.dateicommander.de">Christian Lütgens</a>, for his great work as beta-tester
+///   and for his help when I needed a 2nd opinion on some decisions.
+/// - All donators
+/// - For great music: Heaven Shall Burn, Arch Enemy, Machine Head, Trivium, Deadlock, Draconian, Soulfly,
+///   Delain, Lacuna Coil, Ensiferum, Epica, Sirenia, Tristania, Nightwish, Battlelore, Amon Amarth, Volbeat,
+///   Guns N' Roses
+///
+/// \section faq_sec FAQ
+///
+/// <strong>1. Why is event xyz not fired?</strong>\n
+/// Firing an event is relative time-consuming, even if the event isn't handled by the application at all.
+/// Therefore I implemented a \c DisabledEvents property which can be used to deactivate certain events.\n
+/// By default many events are deactivated.
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/// \namespace TrackBarCtlLibA
+/// \brief <em>Contains COM definitions for the controls' public interfaces</em>
+///
+/// This is the ANSI version of the TrackBar COM library.
+//////////////////////////////////////////////////////////////////////
+
+
+#include "olectl.h"
+#include "CompilerFlags.h"
+#include "DispIDs.h"
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+	// interface is not automation marshaling conformant, requires Windows NT 4.0 SP4 or greater
+	midl_pragma warning(disable: 2039)
+	// identifier length exceeds 31 characters
+	midl_pragma warning(disable: 2111)
+	// too many methods in the interface, requires Windows NT 4.0 SP3 or greater
+	midl_pragma warning(disable: 2362)
+#endif
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+
+[
+	uuid(F65D51B5-B8DD-476a-85B7-3E26E69D7B3C),
+	version(1.7),
+	helpstring("TimoSoft TrackBar 1.7 (ANSI)")
+]
+library TrackBarCtlLibA
+{
+	importlib("stdole2.tlb");
+
+
+	/// \brief <em>Constants used with the \c Appearance property</em>
+	///
+	/// \sa ITrackBar::Appearance
+	[helpstring("Constants used with the 'Appearance' property.")]
+	typedef enum AppearanceConstants {
+		/// \brief The control is drawn with a flat border
+		[helpstring("The control is drawn flat.")]
+		a2D,
+		/// \brief The control is drawn with a normal 3D border
+		[helpstring("The control is drawn with a normal 3D border.")]
+		a3D,
+		/// \brief The control is drawn with a light 3D border
+		[helpstring("The control is drawn with a light 3D border.")]
+		a3DLight
+	} AppearanceConstants;
+
+	/// \brief <em>Constants used with the \c BackgroundDrawMode property</em>
+	///
+	/// \sa ITrackBar::BackgroundDrawMode
+	[helpstring("Constants used with the 'BackgroundDrawMode' property.")]
+	typedef enum BackgroundDrawModeConstants {
+		/// \brief The control's background is painted by the control itself
+		[helpstring("The control's background is painted by the control itself.")]
+		bdmNormal,
+		/// \brief The control's background is painted by the control's parent window
+		///
+		/// The control's background is painted by the control's parent window, which receives a
+		/// \c WM_PRINTCLIENT message if the background must be drawn.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.
+		///
+		/// \sa <a href="https://msdn.microsoft.com/en-us/library/ms534913.aspx">WM_PRINTCLIENT</a>
+		[helpstring("The control's background is painted by its parent window, which receives a 'WM_PRINTCLIENT' message if the background must be drawn. Requires comctl32.dll version 6.10 or higher.")]
+		bdmByParent
+	} BackgroundDrawModeConstants;
+
+	/// \brief <em>Constants used with the \c BorderStyle property</em>
+	///
+	/// \sa ITrackBar::BorderStyle
+	[helpstring("Constants used with the 'BorderStyle' property.")]
+	typedef enum BorderStyleConstants {
+		/// \brief The control is drawn without an inner border
+		[helpstring("The control is drawn without an additional border.")]
+		bsNone,
+		/// \brief The control is drawn with an inner border
+		[helpstring("The control is drawn with an additional border.")]
+		bsFixedSingle
+	} BorderStyleConstants;
+
+	/// \brief <em>Constants used to identify parts of the control</em>
+	///
+	/// \sa CustomDrawControlStateConstants, CustomDrawStageConstants, CustomDrawReturnValuesConstants,
+	///     _ITrackBarEvents::CustomDraw
+	[helpstring("Constants used to identify parts of the control.")]
+	typedef enum CustomDrawControlPartConstants {
+		/// \brief The \c CustomDraw event was raised for the entire control
+		[helpstring("The 'CustomDraw' event was raised for the entire control.")]
+		cdcpEntireControl = 0x0,
+		/// \brief The \c CustomDraw event was raised for the control's tick marks
+		[helpstring("The 'CustomDraw' event was raised for the control's tick marks.")]
+		cdcpTics = 0x1 /*TBCD_TICS*/,
+		/// \brief The \c CustomDraw event was raised for the control's slider
+		[helpstring("The 'CustomDraw' event was raised for the control's slider.")]
+		cdcpSlider = 0x2 /*TBCD_THUMB*/,
+		/// \brief The \c CustomDraw event was raised for the control's trackbar channel
+		[helpstring("The 'CustomDraw' event was raised for the control's trackbar channel.")]
+		cdcpChannel = 0x3 /*TBCD_CHANNEL*/
+	} CustomDrawControlPartConstants;
+
+	/// \brief <em>Flags used to identify control states during custom draw</em>
+	///
+	/// \sa CustomDrawControlPartConstants, CustomDrawStageConstants, CustomDrawReturnValuesConstants,
+	///     _ITrackBarEvents::CustomDraw
+	[helpstring("Flags used to identify control states during custom draw.")]
+	typedef enum CustomDrawControlStateConstants {
+		/// \brief The control is selected
+		///
+		/// \remarks This flag is valid if the control part equals \c cdcpSlider.
+		[helpstring("The control is selected.")]
+		cdcsSelected = 0x1 /*CDIS_SELECTED*/,
+		/// \brief The control is grayed
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is grayed. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdcsGrayed = 0x2 /*CDIS_GRAYED*/,
+		/// \brief The control is disabled
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is disabled. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdcsDisabled = 0x4 /*CDIS_DISABLED*/,
+		/// \brief The control is checked
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is checked. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdcsChecked = 0x8 /*CDIS_CHECKED*/,
+		/// \brief The control has the keyboard focus
+		[helpstring("The control has the keyboard focus.")]
+		cdcsFocus = 0x10 /*CDIS_FOCUS*/,
+		/// \brief The control is the default control
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is the default control. Current versions of Windows probably do not use this flag for button controls.")]
+		cdcsDefault = 0x20 /*CDIS_DEFAULT*/,
+		/// \brief The control is currently under the mouse cursor
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is hot, i. e. it's currently under the mouse cursor.")]
+		cdcsHot = 0x40 /*CDIS_HOT*/,
+		/// \brief The control is marked
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is marked. Current versions of Windows probably do not use this flag for button controls.")]
+		cdcsMarked = 0x80 /*CDIS_MARKED*/,
+		/// \brief The control is in an indeterminate state
+		///
+		/// \remarks Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The control is in an indeterminate state. Current versions of Windows probably do not use this flag for button controls.")]
+		cdcsIndeterminate = 0x100 /*CDIS_INDETERMINATE*/,
+		/// \brief The item is a keyboard cue
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.\n
+		///          Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The item is a keyboard cue. Requires comctl32.dll version 6.0 or higher. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdisShowKeyboardCues = 0x200 /*CDIS_SHOWKEYBOARDCUES*/,
+		/// \brief The item is part of a control that is currently under the mouse pointer ("hot"), but the item is not "hot" itself
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.\n
+		///          Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The item is part of a control that is currently under the mouse pointer (\"hot\"), but the item is not \"hot\" itself. Requires comctl32.dll version 6.10 or higher. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdisNearHot = 0x400 /*CDIS_NEARHOT*/,
+		/// \brief The item is part of a split button that is currently under the mouse pointer ("hot"), but the item is not "hot" itself
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.\n
+		///          Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The item is part of a split button that is currently under the mouse pointer (\"hot\"), but the item is not \"hot\" itself. Requires comctl32.dll version 6.10 or higher. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdisOtherSideHot = 0x800 /*CDIS_OTHERSIDEHOT*/,
+		/// \brief The item is highlighted as a drop target
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.\n
+		///          Current versions of Windows probably do not use this flag for trackbar controls.
+		[helpstring("The item is highlighted as a drop target. Requires comctl32.dll version 6.10 or higher. Current versions of Windows probably do not use this flag for trackbar controls.")]
+		cdisDropHilited = 0x1000 /*CDIS_DROPHILITED*/
+	} CustomDrawControlStateConstants;
+
+	/// \brief <em>Flags used to control further custom draw processing</em>
+	///
+	/// \sa CustomDrawControlPartConstants, CustomDrawControlStateConstants, CustomDrawStageConstants,
+	///     _ITrackBarEvents::CustomDraw
+	[helpstring("Flags used to control further custom draw processing. They can be combined.")]
+	typedef enum CustomDrawReturnValuesConstants {
+		/// \brief Don't use custom draw
+		///
+		/// Advises the control to draw itself and to not raise any further custom draw events during the
+		/// current paint cycle.
+		///
+		/// \usedin The "Labeled Tick Marks" sample
+		[helpstring("Default processing will take place.")]
+		cdrvDoDefault = 0x0 /*CDRF_DODEFAULT*/,
+		/// \brief Use different font and colors
+		///
+		/// Advises the control to draw itself using the specified font and colors.
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Default processing will take place using the specified font and colors. Not used.")]
+		cdrvNewFont = 0x2 /*CDRF_NEWFONT*/,
+		/// \brief Don't draw the control part
+		///
+		/// Advises the control to not draw the specified control part. Use this to draw the part entirely
+		/// yourself.
+		///
+		/// \remarks This flag is valid if the custom draw stage equals \c cdsPrePaint or \c cdsItemPrePaint.
+		[helpstring("The control won't draw the specified part.")]
+		cdrvSkipDefault = 0x4 /*CDRF_SKIPDEFAULT*/,
+		/// \brief Draw the background only
+		///
+		/// Advises the control to draw the background only.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.\n
+		///          This flag is valid if the custom draw stage equals \c cdsPrePaint.
+		[helpstring("The control will draw the background only. Requires comctl32.dll version 6.10 or higher.")]
+		cdrvDoErase = 0x8 /*CDRF_DOERASE*/,
+		/// \brief Fire the custom draw event after drawing took place
+		///
+		/// Advises the control to fire the custom draw event after drawing took place.
+		///
+		/// \remarks This flag is valid if the custom draw stage equals \c cdsPrePaint or \c cdsItemPrePaint.
+		///
+		/// \usedin The "Labeled Tick Marks" sample
+		[helpstring("Fire the custom draw event after drawing took place.")]
+		cdrvNotifyPostPaint = 0x10 /*CDRF_NOTIFYPOSTPAINT*/,
+		/// \brief Fire the custom draw event for drawing operations related to a single control part
+		///
+		/// \remarks This flag is valid if the custom draw stage equals \c cdsPrePaint.
+		///
+		/// \usedin The "Labeled Tick Marks" sample
+		///
+		/// \sa CustomDrawControlPartConstants
+		[helpstring("Fire the custom draw event for drawing operations related to a single control part.")]
+		cdrvNotifyItemDraw = 0x20 /*CDRF_NOTIFYITEMDRAW*/,
+		/// \brief Fire the custom draw event for sub-item related drawing operations
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Fire the custom draw event for sub-item related drawing operations. Not used.")]
+		cdrvNotifySubItemDraw = 0x20 /*CDRF_NOTIFYSUBITEMDRAW*/,
+		/// \brief Fire the custom draw event after erasing took place
+		///
+		/// Advises the control to fire the custom draw event after erasing took place.
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Fire the custom draw event after erasing took place. Not used.")]
+		cdrvNotifyPostErase = 0x40 /*CDRF_NOTIFYPOSTERASE*/,
+		/// \brief Fire the custom draw event for item related erasing operations
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Fire the custom draw event for item related erasing operations. Not used.")]
+		cdrvNotifyItemErase = 0x80 /*CDRF_NOTIFYITEMERASE*/,
+		/// \brief Don't draw the focus rectangle
+		///
+		/// Advises the control to not draw the focus rectangle.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.\n
+		///          This flag is valid if the custom draw stage equals \c cdsPrePaint.
+		[helpstring("The control won't draw the focus rectangle. Requires comctl32.dll version 6.10 or higher.")]
+		cdrvSkipPostPaint = 0x100 /*CDRF_SKIPPOSTPAINT*/
+	} CustomDrawReturnValuesConstants;
+
+	/// \brief <em>Constants used to identify custom draw stages</em>
+	///
+	/// \sa CustomDrawControlPartConstants, CustomDrawControlStateConstants, CustomDrawReturnValuesConstants,
+	///     _ITrackBarEvents::CustomDraw
+	[helpstring("Constants used to identify custom draw stages.")]
+	typedef enum CustomDrawStageConstants {
+		/// \brief Before the painting cycle begins
+		///
+		/// \usedin All custom draw samples
+		[helpstring("Before the painting cycle begins.")]
+		cdsPrePaint = 0x1 /*CDDS_PREPAINT*/,
+		/// \brief After the painting cycle is complete
+		[helpstring("After the painting cycle is complete.")]
+		cdsPostPaint = 0x2 /*CDDS_POSTPAINT*/,
+		/// \brief Before the erasing cycle begins
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Before the erasing cycle begins. Not used.")]
+		cdsPreErase = 0x3 /*CDDS_PREERASE*/,
+		/// \brief After the erasing cycle is complete
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("After the erasing cycle is complete. Not used.")]
+		cdsPostErase = 0x4 /*CDDS_POSTERASE*/,
+		/// \brief The event affects a single control part only and not the whole control
+		///
+		/// \sa CustomDrawControlPartConstants
+		[helpstring("The event affects a single control part only and not the whole control.")]
+		cdsItem = 0x10000 /*CDDS_ITEM*/,
+		/// \brief Before a control part is drawn
+		///
+		/// \usedin The "Labeled Tick Marks" sample
+		///
+		/// \sa CustomDrawControlPartConstants
+		[helpstring("Before a control part is drawn.")]
+		cdsItemPrePaint = cdsItem | cdsPrePaint /*CDDS_ITEMPREPAINT*/,
+		/// \brief After a control part has been drawn
+		///
+		/// \usedin The "Labeled Tick Marks" sample
+		///
+		/// \sa CustomDrawControlPartConstants
+		[helpstring("After a control part has been drawn.")]
+		cdsItemPostPaint = cdsItem | cdsPostPaint /*CDDS_ITEMPOSTPAINT*/,
+		/// \brief Before an item is erased
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Before an item is erased. Not used.")]
+		cdsItemPreErase = cdsItem | cdsPreErase /*CDDS_ITEMPREERASE*/,
+		/// \brief After an item has been erased
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("After an item has been erased. Not used.")]
+		cdsItemPostErase = cdsItem | cdsPostErase /*CDDS_ITEMPOSTERASE*/,
+		/// \brief The event affects a single sub-item only and not the whole item
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("The event affects a single sub-item only and not the whole item. Not used.")]
+		cdsSubItem = 0x20000 /*CDDS_SUBITEM*/,
+		/// \brief Before a sub-item is drawn
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("Before a sub-item is drawn. Not used.")]
+		cdsSubItemPrePaint = cdsSubItem | cdsItemPrePaint /*CDDS_SUBITEM | CDDS_ITEMPREPAINT*/,
+		/// \brief After a sub-item has been drawn
+		///
+		/// \remarks This flag is not valid for trackbar controls. It's simply defined for completeness.
+		[helpstring("After a sub-item has been drawn. Not used.")]
+		cdsSubItemPostPaint = cdsSubItem | cdsItemPostPaint /*CDDS_SUBITEM | CDDS_ITEMPOSTPAINT*/
+	} CustomDrawStageConstants;
+
+	/// \brief <em>Flags used with the \c DisabledEvents property</em>
+	///
+	/// \sa ITrackBar::DisabledEvents
+	[helpstring("Flags used with the 'DisabledEvents' property. They can be combined.")]
+	typedef enum DisabledEventsConstants {
+		/// \brief Mouse events won't be fired
+		///
+		/// The following events won't be fired: \c MouseDown, \c MouseUp, \c MouseEnter, \c MouseHover,
+		/// \c MouseLeave, \c MouseMove, \c MouseWheel
+		///
+		/// \sa _ITrackBarEvents::MouseDown, _ITrackBarEvents::MouseUp, _ITrackBarEvents::MouseEnter,
+		///     _ITrackBarEvents::MouseHover, _ITrackBarEvents::MouseLeave, _ITrackBarEvents::MouseMove,
+		///     _ITrackBarEvents::MouseWheel
+		[helpstring("Disables the following events: MouseDown, MouseUp, MouseEnter, MouseHover, MouseLeave, MouseMove, MouseWheel")]
+		deMouseEvents = 0x01,
+		/// \brief Click events won't be fired
+		///
+		/// The following events won't be fired: \c Click, \c DblClick, \c MClick, \c MDblClick,
+		/// \c RClick, \c RDblClick, \c XClick, \c XDblClick
+		///
+		/// \sa _ITrackBarEvents::Click, _ITrackBarEvents::DblClick, _ITrackBarEvents::MClick,
+		///     _ITrackBarEvents::MDblClick, _ITrackBarEvents::RClick, _ITrackBarEvents::RDblClick,
+		///     _ITrackBarEvents::XClick, _ITrackBarEvents::XDblClick
+		[helpstring("Disables the following events: Click, DblClick, MClick, MDblClick, RClick, RDblClick, XClick, XDblClick")]
+		deClickEvents = 0x02,
+		/// \brief Keyboard events won't be fired
+		///
+		/// The following events won't be fired: \c KeyDown, \c KeyUp, \c KeyPress
+		///
+		/// \sa _ITrackBarEvents::KeyDown, _ITrackBarEvents::KeyUp, _ITrackBarEvents::KeyPress
+		[helpstring("Disables the following events: KeyDown, KeyUp, KeyPress")]
+		deKeyboardEvents = 0x08,
+		/// \brief The \c CustomDraw event won't be fired
+		///
+		/// The following event won't be fired: \c CustomDraw
+		///
+		/// \sa _ITrackBarEvents::CustomDraw
+		[helpstring("Disables the following event: CustomDraw")]
+		deCustomDraw = 0x100,
+		/// \brief The \c GetInfoTipText event won't be fired
+		///
+		/// The following event won't be fired: \c GetInfoTipText
+		///
+		/// \sa _ITrackBarEvents::GetInfoTipText
+		[helpstring("Disables the following event: GetInfoTipText")]
+		deGetInfoTipText = 0x200
+	} DisabledEventsConstants;
+
+	/// \brief <em>Constants used with the \c IOLEDataObject::GetDropDescription and IOLEDataObject::SetDropDescription methods</em>
+	///
+	/// \sa IOLEDataObject::GetDropDescription, IOLEDataObject::SetDropDescription
+	[helpstring("Constants used with the 'OLEDataObject.GetDropDescription' and 'OLEDataObject.SetDropDescription' methods.")]
+	typedef enum DropDescriptionIconConstants {
+		/// \brief No drop description is displayed
+		[helpstring("No drop description is displayed.")]
+		ddiNone = -1/*DROPIMAGE_INVALID*/,     // should be 8 (DROPIMAGE_NOIMAGE)
+		/// \brief The drop description icon that visualizes the \c odeNone drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeNone' drop effect is displayed.")]
+		ddiNoDrop = 0/*DROPIMAGE_NONE*/,
+		/// \brief The drop description icon that visualizes the \c odeCopy drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeCopy' drop effect is displayed.")]
+		ddiCopy = 1/*DROPIMAGE_COPY*/,
+		/// \brief The drop description icon that visualizes the \c odeMove drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeMove' drop effect is displayed.")]
+		ddiMove = 2/*DROPIMAGE_MOVE*/,
+		/// \brief The drop description icon that visualizes the \c odeLink drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeLink' drop effect is displayed.")]
+		ddiLink = 4/*DROPIMAGE_LINK*/,
+		/// \brief The drop description icon that visualizes a drop, which causes a metadata change, is displayed
+		[helpstring("The drop description icon that visualizes a drop, which causes a metadata change, is displayed.")]
+		ddiMetadataChange = 6/*DROPIMAGE_LABEL*/,
+		/// \brief The drop description icon that visualizes a warning is displayed
+		[helpstring("The drop description icon that visualizes a warning is displayed.")]
+		ddiWarning = 7/*DROPIMAGE_WARNING*/,
+		/// \brief The default drop description is displayed
+		///
+		/// \remarks Requires Windows 7 or newer.
+		[helpstring("The default drop description is displayed. Requires Windows 7 or newer.")]
+		ddiUseDefault = 8/*DROPIMAGE_NOIMAGE*/     // should be -1 (DROPIMAGE_INVALID)
+	} DropDescriptionIconConstants;
+
+	/// \brief <em>Constants used with the extended mouse button events</em>
+	///
+	/// \sa _ITrackBarEvents::MouseDown, _ITrackBarEvents::MouseEnter, _ITrackBarEvents::MouseHover,
+	///     _ITrackBarEvents::MouseLeave, _ITrackBarEvents::MouseMove, _ITrackBarEvents::MouseUp,
+	///     _ITrackBarEvents::XClick, _ITrackBarEvents::XDblClick
+	[helpstring("Constants used with the extended mouse button events.")]
+	typedef enum ExtendedMouseButtonConstants {
+		/// \brief Identifies the first extended mouse button
+		[helpstring("Identifies the first extended mouse button.")]
+		embXButton1 = 0x20,
+		/// \brief Identifies the second extended mouse button
+		[helpstring("Identifies the second extended mouse button.")]
+		embXButton2 = 0x40
+	} ExtendedMouseButtonConstants;
+
+	/// \brief <em>Constants used with the \c MousePointer property</em>
+	///
+	/// \sa ITrackBar::MousePointer
+	[helpstring("Constants used with the 'MousePointer' property.")]
+	typedef enum MousePointerConstants {
+		/// \brief The default mouse cursor is used
+		[helpstring("The default mouse cursor is used.")]
+		mpDefault,
+		/// \brief The default arrow is used as mouse cursor
+		[helpstring("The default arrow is used as mouse cursor.")]
+		mpArrow,
+		/// \brief A cross is used as mouse cursor
+		[helpstring("A cross is used as mouse cursor.")]
+		mpCross,
+		/// \brief A vertical beam (like in textboxes) is used as mouse cursor
+		[helpstring("A vertical beam (like in textboxes) is used as mouse cursor.")]
+		mpIBeam,
+		/// \brief An icon is used as mouse cursor
+		[helpstring("An icon is used as mouse cursor.")]
+		mpIcon,
+		/// \brief A mouse cursor indicating window sizing is used
+		[helpstring("A mouse cursor indicating window sizing is used.")]
+		mpSize,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its
+		/// upper-right or lower-left corner.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper-right or lower-left corner is used.")]
+		mpSizeNESW,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its upper or
+		/// lower border.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper or lower border is used.")]
+		mpSizeNS,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its
+		/// upper-left or lower-right corner.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper-left or lower-right corner is used.")]
+		mpSizeNWSE,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its left or
+		/// right border.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's left or right border is used.")]
+		mpSizeEW,
+		/// \brief An arrow pointing upwardly is used as mouse cursor
+		[helpstring("An arrow pointing upwardly is used as mouse cursor.")]
+		mpUpArrow,
+		/// \brief An hourglass is used as mouse cursor.
+		[helpstring("An hourglass is used as mouse cursor.")]
+		mpHourglass,
+		/// \brief An mouse cursor indicating that the control can't be a drop target is used
+		[helpstring("An mouse cursor indicating that the control can't be a drop target is used.")]
+		mpNoDrop,
+		/// \brief The default arrow with a small hourglass is used as mouse cursor
+		[helpstring("The default arrow with a small hourglass is used as mouse cursor.")]
+		mpArrowHourglass,
+		/// \brief The default arrow with a small question mark is used as mouse cursor
+		[helpstring("The default arrow with a small question mark is used as mouse cursor.")]
+		mpArrowQuestion,
+		/// \brief A mouse cursor indicating window sizing to all directions is used
+		[helpstring("A mouse cursor indicating window sizing to all directions is used.")]
+		mpSizeAll,
+		/// \brief A hand typically used for hyperlinks is used as mouse cursor
+		[helpstring("A hand typically used for hyperlinks is used as mouse cursor.")]
+		mpHand,
+		/// \brief A mouse cursor indicating that the program waits for some media is used
+		[helpstring("A mouse cursor indicating that the program waits for some media is used.")]
+		mpInsertMedia,
+		/// \brief A mouse cursor indicating scrolling to all directions is used
+		[helpstring("A mouse cursor indicating scrolling to all directions is used.")]
+		mpScrollAll,
+		/// \brief A mouse cursor indicating scrolling upwardly is used
+		[helpstring("A mouse cursor indicating scrolling upwardly is used.")]
+		mpScrollN,
+		/// \brief A mouse cursor indicating scrolling to the window's upper-right corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's upper-right corner is used.")]
+		mpScrollNE,
+		/// \brief A mouse cursor indicating scrolling to the window's right border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's right border is used.")]
+		mpScrollE,
+		/// \brief A mouse cursor indicating scrolling to the window's lower-right corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's lower-right corner is used.")]
+		mpScrollSE,
+		/// \brief A mouse cursor indicating scrolling downwards is used
+		[helpstring("A mouse cursor indicating scrolling downwards is used.")]
+		mpScrollS,
+		/// \brief A mouse cursor indicating scrolling to the window's lower-left corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's lower-left corner is used.")]
+		mpScrollSW,
+		/// \brief A mouse cursor indicating scrolling to the window's left border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's left border is used.")]
+		mpScrollW,
+		/// \brief A mouse cursor indicating scrolling to the window's upper-left corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's upper-left corner is used.")]
+		mpScrollNW,
+		/// \brief A mouse cursor indicating scrolling upwardly or downwards is used
+		[helpstring("A mouse cursor indicating scrolling upwardly or downwards is used.")]
+		mpScrollNS,
+		/// \brief A mouse cursor indicating scrolling to the window's left or right border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's left or right border is used.")]
+		mpScrollEW,
+		/// \brief The custom mouse cursor defined by the \c MouseIcon property is used
+		[helpstring("The custom mouse cursor defined by the MouseIcon property is used.")]
+		mpCustom = 0x63
+	} MousePointerConstants;
+
+	/// \brief <em>Constants used with OLE drag'n'drop</em>
+	///
+	/// \sa _ITrackBarEvents::OLEDragEnter, _ITrackBarEvents::OLEDragMouseMove, _ITrackBarEvents::OLEDragDrop
+	[helpstring("Constants used with the OLEDrag* events.")]
+	typedef enum OLEDropEffectConstants {
+		/// \brief No OLE drag and drop operation has occurred or will occur
+		[helpstring("No OLE drag and drop operation has occurred or will occur.")]
+		odeNone = 0 /*DROPEFFECT_NONE*/,
+		/// \brief A copy has occured or will occur
+		[helpstring("A copy has occured or will occur.")]
+		odeCopy = 1 /*DROPEFFECT_COPY*/,
+		/// \brief A move has occured or will occur
+		[helpstring("A move has occured or will occur.")]
+		odeMove = 2 /*DROPEFFECT_MOVE*/,
+		/// \brief A link has occured or will occur
+		[helpstring("A link has occured or will occur.")]
+		odeLink = 4 /*DROPEFFECT_LINK*/,
+		/// \brief Combination of \c odeCopy and \c odeMove
+		[helpstring("Combination of 'odeCopy' and 'odeMove'.")]
+		odeCopyOrMove = odeCopy | odeMove,
+		/// \brief The drop target window has scrolled or will scroll
+		[helpstring("The drop target window has scrolled or will scroll.")]
+		odeScroll = 0x80000000 /*DROPEFFECT_SCROLL*/
+	} OLEDropEffectConstants;
+
+	/// \brief <em>Constants used with the \c Orientation property</em>
+	///
+	/// \sa ITrackBar::Orientation
+	[helpstring("Constants used with the 'Orientation' property.")]
+	typedef enum OrientationConstants {
+		/// \brief The control is orientated horizontally
+		[helpstring("The control is orientated horizontally.")]
+		oHorizontal,
+		/// \brief The control is orientated vertically
+		[helpstring("The control is orientated vertically.")]
+		oVertical
+	} OrientationConstants;
+
+	/// \brief <em>Constants used with the \c PositionChanging and \c PositionChanged events</em>
+	///
+	/// \sa ITrackBar::CurrentPosition, _ITrackBarEvents::PositionChanging, _ITrackBarEvents::PositionChanged
+	[helpstring("Constants used with the 'PositionChanging' and 'PositionChanged' events.")]
+	typedef enum PositionChangeTypeConstants {
+		/// \brief The user has started dragging the slider
+		[helpstring("The user has started dragging the slider.")]
+		pctBeginTrack,
+		/// \brief The user has stopped dragging the slider
+		[helpstring("The user has stopped dragging the slider.")]
+		pctEndTrack,
+		/// \brief The user is dragging the slider
+		[helpstring("The user is dragging the slider.")]
+		pctTracking,
+		/// \brief The slider's logical position was set to an absolute value
+		[helpstring("The slider's logical position was set to an absolute value.")]
+		pctJumpToPosition,
+		/// \brief The slider's logical position was increased by a large step's width
+		///
+		/// \sa ITrackBar::LargeStepWidth
+		[helpstring("The slider's logical position was increased by a large step's width.")]
+		pctLargeStepUp,
+		/// \brief The slider's logical position was decreased by a large step's width
+		///
+		/// \sa ITrackBar::LargeStepWidth
+		[helpstring("The slider's logical position was decreased by a large step's width.")]
+		pctLargeStepDown,
+		/// \brief The slider's logical position was increased by a small step's width
+		///
+		/// \sa ITrackBar::SmallStepWidth
+		[helpstring("The slider's logical position was increased by a small step's width.")]
+		pctSmallStepUp,
+		/// \brief The slider's logical position was decreased by a small step's width
+		///
+		/// \sa ITrackBar::SmallStepWidth
+		[helpstring("The slider's logical position was decreased by a small step's width.")]
+		pctSmallStepDown
+	} PositionChangeTypeConstants;
+
+	/// \brief <em>Flags used with the \c MouseWheel event</em>
+	///
+	/// \sa _ITrackBarEvents::MouseWheel
+	[helpstring("Flags used with the 'MouseWheel' event.")]
+	typedef enum ScrollAxisConstants {
+		/// \brief Scroll vertically
+		[helpstring("The control will scroll vertically.")]
+		saVertical = 1,
+		/// \brief Scroll horizontally
+		[helpstring("The control will scroll horizontally.")]
+		saHorizontal = 2
+	} ScrollAxisConstants;
+
+	/// \brief <em>Constants used with the \c SelectionType property</em>
+	///
+	/// \sa ITrackBar::SelectionType
+	[helpstring("Constants used with the 'SelectionType' property.")]
+	typedef enum SelectionTypeConstants {
+		/// \brief The control allows selection of discrete values only
+		[helpstring("The control allows selection of discrete values only.")]
+		stDiscreteValue,
+		/// \brief The control allows definining a range of values
+		[helpstring("The control allows definining a range of values.")]
+		stRangeSelection
+	} SelectionTypeConstants;
+
+	/// \brief <em>Constants used with the \c TickMarksPosition property</em>
+	///
+	/// \sa ITrackBar::TickMarksPosition
+	[helpstring("Constants used with the 'TickMarksPosition' property.")]
+	typedef enum TickMarksPositionConstants {
+		/// \brief The control does not display any tick marks
+		[helpstring("The control does not display any tick marks.")]
+		tmpNone,
+		/// \brief The control displays tick marks below or to the right of the control (depending on its orientation)
+		[helpstring("The control displays tick marks below or to the right of the control (depending on its orientation).")]
+		tmpBottomOrRight,
+		/// \brief The control displays tick marks above or to the left of the control (depending on its orientation)
+		[helpstring("The control displays tick marks above or to the left of the control (depending on its orientation).")]
+		tmpTopOrLeft,
+		/// \brief The control displays tick marks on both sides of the control
+		[helpstring("The control displays tick marks on both sides of the control.")]
+		tmpBoth
+	} TickMarksPositionConstants;
+
+	/// \brief <em>Constants used with the \c ToolTipPosition property</em>
+	///
+	/// \sa ITrackBar::ToolTipPosition
+	[helpstring("Constants used with the 'ToolTipPosition' property.")]
+	typedef enum ToolTipPositionConstants {
+		/// \brief The control does not display any tooltips
+		[helpstring("The control does not display any tooltips.")]
+		ttpNone,
+		/// \brief The control displays tooltips below or to the right of the control (depending on its orientation)
+		[helpstring("The control displays tooltips below or to the right of the control (depending on its orientation).")]
+		ttpBottomOrRight,
+		/// \brief The control displays tooltips above or to the left of the control (depending on its orientation)
+		[helpstring("The control displays tooltips above or to the left of the control (depending on its orientation).")]
+		ttpTopOrLeft
+	} ToolTipPositionConstants;
+
+
+	/// \brief <em>Holds the coordinates of a rectangle's opposing corners</em>
+	///
+	/// \sa _ITrackBarEvents::CustomDraw
+	// NOTE: If we change the UUID, we also need to update _ITrackBarEvents_CP.h!
+	[helpstring("Holds a rectangle's position and size."), uuid(A335055E-97A2-45c3-93DF-8CE23432E21F)]
+	typedef struct RECTANGLE
+	{
+		/// \brief <em>Holds the position of the rectangle's left border in pixels</em>
+		[helpstring("Holds the position of the rectangle's left border in pixels.")]
+		OLE_XPOS_PIXELS Left;
+		/// \brief <em>Holds the position of the rectangle's upper border in pixels</em>
+		[helpstring("Holds the position of the rectangle's upper border in pixels.")]
+		OLE_YPOS_PIXELS Top;
+		/// \brief <em>Holds the position of the rectangle's right border in pixels</em>
+		[helpstring("Holds the position of the rectangle's right border in pixels.")]
+		OLE_XPOS_PIXELS Right;
+		/// \brief <em>Holds the position of the rectangle's lower border in pixels</em>
+		[helpstring("Holds the position of the rectangle's lower border in pixels.")]
+		OLE_YPOS_PIXELS Bottom;
+	} RECTANGLE;
+
+
+	/// \interface IOLEDataObject
+	/// \brief <em>Wraps the \c IDataObject interface</em>
+	///
+	/// This interface provides easy access to data being transferred using the \c IDataObject interface.
+	///
+	/// \sa _IOLEDataObjectEvents,
+	///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>
+	[
+		object,
+		uuid(7ECD9381-0482-49d2-A273-2C05CBA0EBEB),
+		dual,
+		nonextensible,
+		helpstring("IOLEDataObject interface"),
+		pointer_default(unique)
+	]
+	interface IOLEDataObject : IDispatch
+	{
+		/// \brief <em>Deletes the contents of the \c OLEDataObject object</em>
+		///
+		/// \remarks This method will succeed only if the \c OLEDataObject wraps the control's own
+		///          implementation of the \c IDataObject interface.
+		///
+		/// \sa SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>
+		[id(DISPID_ODO_CLEAR), helpstring("Deletes the contents of the 'OLEDataObject' object.")]
+		HRESULT Clear(void);
+		/// \brief <em>Retrieves the best format settings from the \c OLEDataObject object</em>
+		///
+		/// Call this method to retrieve data format settings that match best with the data format, that you
+		/// actually want to work with. Set the parameters to the data format settings you want to work with.
+		/// The method will set them to the settings you should use.
+		///
+		/// \param[in,out] formatID An integer value specifying the data format. Valid values are those defined
+		///                by VB's \c ClipBoardConstants enumeration, but also any other format that was
+		///                registered using the \c RegisterClipboardFormat API function.
+		/// \param[in,out] index An integer value that is assigned to the internal \c FORMATETC struct's
+		///                \c lindex member. Usually you pass -1 here, but some formats like
+		///                \c CFSTR_FILECONTENTS require multiple \c FORMATETC structs for the same format. In
+		///                such cases you'll give each struct of this format a separate index.
+		/// \param[in,out] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC
+		///                struct's \c dwAspect member. Any of the \c DVASPECT_* values defined by the
+		///                Microsoft&reg; Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \sa GetData, GetFormat,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETCANONICALFORMAT), helpstring("Call this method to retrieve data format settings that match best with the data format, that you actually want to work with.")]
+		HRESULT GetCanonicalFormat([in, out] LONG* formatID, [in, out] LONG* Index, [in, out] LONG* dataOrViewAspect);
+		/// \brief <em>Retrieves data from the \c OLEDataObject object</em>
+		///
+		/// Retrieves data from the \c OLEDataObject object, that has the specified format.
+		///
+		/// \param[in] formatID An integer value specifying the format of the data to retrieve. Valid values
+		///            are those defined by VB's \c ClipBoardConstants enumeration, but also any other format
+		///            that has been registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \return The data that has the specified format.
+		///
+		/// \remarks This method will fail, if the \c OLEDataObject object does not contain data of the
+		///          specified format.
+		///
+		/// \sa GetCanonicalFormat, GetFormat, SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETDATA), helpstring("Retrieves data from the 'OLEDataObject' object.")]
+		HRESULT GetData([in] LONG formatID, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect, [out, retval] VARIANT* pData);
+		/// \brief <em>Retrieves the \c DROPDESCRIPTION data stored by the \c OLEDataObject object</em>
+		///
+		/// Retrieves the \c DROPDESCRIPTION data stored by the \c OLEDataObject object. The drop description
+		/// describes what will happen if the user drops the dragged data at the current position. It is
+		/// displayed at the bottom of the drag image.
+		///
+		/// \param[in,out] targetDescription Receives the description of the current drop target.
+		/// \param[in,out] actionDescription Receives the description of the whole drop action, i. e. a string
+		///                like <em>"Copy to %1"</em> where <em>"Copy to"</em> is the description of the current
+		///                drop effect and <em>"%1"</em> is the placeholder for the drop target description
+		///                specified by \c targetDescription.
+		/// \param[in,out] icon Receives the icon used to visualize the current drop effect. Any of the values
+		///                defined by the \c DropDescriptionIconConstants enumeration is valid.
+		///
+		/// \remarks In the \c actionDescription string, the sign "%" is escaped as "%%".\n
+		///          Requires Windows Vista or newer.
+		///
+		/// \sa SetDropDescription, ITrackBar::SupportOLEDragImages, DropDescriptionIconConstants,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb773268.aspx">DROPDESCRIPTION</a>
+		[id(DISPID_ODO_GETDROPDESCRIPTION), helpstring("Retrieves the 'DROPDESCRIPTION' data stored by the 'OLEDataObject' object. Requires Windows Vista or newer.")]
+		HRESULT GetDropDescription([in, out, optional] VARIANT* targetDescription, [in, out, optional] VARIANT* actionDescription, [in, out, defaultvalue(0)] DropDescriptionIconConstants* Icon);
+		/// \brief <em>Retrieves whether the \c OLEDataObject object contains data in a specific format</em>
+		///
+		/// \param[in] formatID An integer value specifying the format to check for. Valid values are those
+		///            defined by VB's \c ClipBoardConstants enumeration, but also any other format that was
+		///            registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \return \c True, if the \c OLEDataObject object contains data in the specified format;
+		///         otherwise \c False.
+		///
+		/// \sa GetCanonicalFormat, GetData, SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETFORMAT), helpstring("Retrieves whether the 'OLEDataObject' object contains data in a specific format.")]
+		HRESULT GetFormat([in] LONG formatID, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect, [out, retval] VARIANT_BOOL* pFormatAvailable);
+		/// \brief <em>Inserts data into the \c OLEDataObject object using the specified format</em>
+		///
+		/// \param[in] formatID An integer value specifying the format of the data being passed. Valid values
+		///            are those defined by VB's \c ClipBoardConstants enumeration, but also any other format
+		///            that has been registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] data The data to insert. If not specified, the \c OLESetData event will be raised if
+		///            data of the specified format is requested from the \c OLEDataObject object.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \remarks The \c data parameter is optional only if the \c OLEDataObject wraps the control's own
+		///          implementation of the \c IDataObject interface.
+		///
+		/// \sa GetData, Clear,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_SETDATA), helpstring("Inserts data into the 'OLEDataObject' object using the specified format.")]
+		HRESULT SetData([in] LONG formatID, [in, optional] VARIANT data, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect);
+		/// \brief <em>Sets the drop description displayed below the drag image</em>
+		///
+		/// Sets the \c DROPDESCRIPTION data. The drop description describes what will happen if the user drops
+		/// the dragged data at the current position. It is displayed at the bottom of the drag image.
+		///
+		/// \param[in] targetDescription The description of the current drop target.
+		/// \param[in] actionDescription The description of the whole drop action, i. e. a string like <em>"Copy
+		///            to %1"</em> where <em>"Copy to"</em> is the description of the current drop effect and
+		///            <em>"%1"</em> is the placeholder for the drop target description specified by
+		///            \c targetDescription.
+		/// \param[in] icon The icon used to visualize the current drop effect. Any of the values defined by
+		///            the \c DropDescriptionIconConstants enumeration is valid.
+		///
+		/// \remarks In the \c actionDescription string, the sign "%" is escaped as "%%".\n
+		///          Requires Windows Vista or newer.
+		///
+		/// \sa GetDropDescription, ITrackBar::SupportOLEDragImages, DropDescriptionIconConstants,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb773268.aspx">DROPDESCRIPTION</a>
+		[id(DISPID_ODO_SETDROPDESCRIPTION), helpstring("Sets the drop description displayed below the drag image. Requires Windows Vista or newer.")]
+		HRESULT SetDropDescription([in, optional] VARIANT targetDescription, [in, optional] VARIANT actionDescription, [in, defaultvalue(ddiNone)] DropDescriptionIconConstants Icon);
+	}
+
+
+	/// \interface _IOLEDataObjectEvents
+	/// \brief <em>The \c OLEDataObject class' events interface</em>
+	///
+	/// This interface defines all events the \c OLEDataObject class may raise.
+	///
+	/// \sa IOLEDataObject
+	[
+		uuid(82F55729-A7FE-42d8-91AB-05CD575E639C),
+		helpstring("IOLEDataObject-event-interface")
+	]
+	dispinterface _IOLEDataObjectEvents
+	{
+		properties:
+		methods:
+	};
+
+
+	/// \brief <em>The \c OLEDataObject class</em>
+	///
+	/// This COM class implements the \c IOLEDataObject and \c _IOLEDataObjectEvents interfaces.
+	///
+	/// \sa IOLEDataObject, _IOLEDataObjectEvents
+	[
+		uuid(3FBD0892-6402-4c2e-9348-4AED98408CB0),
+		version(1.7),
+		noncreatable,
+		helpstring("OLEDataObject Class 1.7 (ANSI)")
+	]
+	coclass OLEDataObject
+	{
+		[default] interface IOLEDataObject;
+		[default, source] dispinterface _IOLEDataObjectEvents;
+	};
+
+
+	/// \interface ITrackBar
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The main interface</em>
+	///
+	/// This is the control's main interface. It wraps the control window.
+	///
+	/// \sa _ITrackBarEvents
+	[
+		object,
+		uuid(0FAB5A02-677E-4501-ADE7-1F2EBD921CCA),
+		dual,
+		nonextensible,
+		helpstring("ITrackBar interface"),
+		pointer_default(unique)
+	]
+	interface ITrackBar : IDispatch
+	{
+		/// \brief <em>Controls the style of the control's outer border</em>
+		///
+		/// Retrieves or sets the kind of border that is drawn around the control. Any of the values defined
+		/// by the \c AppearanceConstants enumeration is valid.
+		///
+		/// \sa BorderStyle, AppearanceConstants
+		[propget, id(DISPID_TRACKBARCTL_APPEARANCE), helpstring("Retrieves or sets the kind of border that is drawn around the control.")]
+		HRESULT Appearance([out, retval] AppearanceConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_APPEARANCE), helpstring("Retrieves or sets the kind of border that is drawn around the control.")]
+		HRESULT Appearance([in] AppearanceConstants newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's application ID</em>
+		///
+		///   Retrieves the control's application ID. This property is part of the fingerprint that
+		///   uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppName, AppShortName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_APPID), hidden]
+		HRESULT AppID([out, retval] SHORT* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's application name</em>
+		///
+		///   Retrieves the control's application name. This property is part of the fingerprint that
+		///   uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppShortName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_APPNAME), hidden]
+		HRESULT AppName([out, retval] BSTR* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's short application name</em>
+		///
+		///   Retrieves the control's short application name. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_APPSHORTNAME), hidden]
+		HRESULT AppShortName([out, retval] BSTR* pValue);
+		/// \brief <em>Controls the distance between automatically inserted tick marks</em>
+		///
+		/// Retrieves or sets the interval frequency for tick marks in a trackbar, that has the
+		/// \c AutoTickMarks property set to \c True.
+		///
+		/// \sa AutoTickMarks, TickMarks, CurrentPosition
+		[propget, id(DISPID_TRACKBARCTL_AUTOTICKFREQUENCY), helpstring("Retrieves or sets the interval frequency for tick marks in a trackbar, that has the 'AutoTickMarks' property set to 'True'.")]
+		HRESULT AutoTickFrequency([out, retval] SHORT* pValue);
+		[propput, id(DISPID_TRACKBARCTL_AUTOTICKFREQUENCY), helpstring("Retrieves or sets the interval frequency for tick marks in a trackbar, that has the 'AutoTickMarks' property set to 'True'.")]
+		HRESULT AutoTickFrequency([in] SHORT newValue);
+		/// \brief <em>Specifies whether the control automatically displays tick marks</em>
+		///
+		/// Retrieves or sets whether the control automatically displays tick marks. If set to \c True, tick
+		/// marks are inserted automatically; otherwise not.
+		///
+		/// \attention Changing this property destroys and recreates the control.
+		///
+		/// \sa AutoTickFrequency, TickMarks
+		[propget, id(DISPID_TRACKBARCTL_AUTOTICKMARKS), helpstring("Retrieves or sets whether the control automatically displays tick marks. Changing this property destroys and recreates the control.")]
+		HRESULT AutoTickMarks([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_AUTOTICKMARKS), helpstring("Retrieves or sets whether the control automatically displays tick marks. Changing this property destroys and recreates the control.")]
+		HRESULT AutoTickMarks([in] VARIANT_BOOL newValue);
+		/// \brief <em>Specifies the control's background color</em>
+		///
+		/// Retrieves or sets the control's background color.
+		///
+		/// \remarks This property isn't supported for themed trackbars.
+		///
+		/// \sa BackgroundDrawMode
+		[propget, id(DISPID_TRACKBARCTL_BACKCOLOR), helpstring("Retrieves or sets the control's background color. This property isn't supported for themed trackbars.")]
+		HRESULT BackColor([out, retval] OLE_COLOR* pValue);
+		[propput, id(DISPID_TRACKBARCTL_BACKCOLOR), helpstring("Retrieves or sets the control's background color. This property isn't supported for themed trackbars.")]
+		HRESULT BackColor([in] OLE_COLOR newValue);
+		/// \brief <em>Controls how the control's background is drawn</em>
+		///
+		/// Retrieves or sets how the control's background is drawn. Any of the values defined by the
+		/// \c BackgroundDrawModeConstants enumeration is valid.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.
+		///
+		/// \sa BackColor, BackgroundDrawModeConstants
+		[propget, id(DISPID_TRACKBARCTL_BACKGROUNDDRAWMODE), helpstring("Retrieves or sets how the control's background is drawn. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT BackgroundDrawMode([out, retval] BackgroundDrawModeConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_BACKGROUNDDRAWMODE), helpstring("Retrieves or sets how the control's background is drawn. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT BackgroundDrawMode([in] BackgroundDrawModeConstants newValue);
+		/// \brief <em>Controls the style of the control's inner border</em>
+		///
+		/// Retrieves or sets the kind of inner border that is drawn around the control. Any of the values
+		/// defined by the \c BorderStyleConstants enumeration is valid.
+		///
+		/// \sa Appearance, BorderStyleConstants
+		[propget, id(DISPID_TRACKBARCTL_BORDERSTYLE), helpstring("Retrieves or sets the kind of inner border that is drawn around the control.")]
+		HRESULT BorderStyle([out, retval] BorderStyleConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_BORDERSTYLE), helpstring("Retrieves or sets the kind of inner border that is drawn around the control.")]
+		HRESULT BorderStyle([in] BorderStyleConstants newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's build number</em>
+		///
+		///   Retrieves the control's build number. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa Version, AppID, AppName, AppShortName, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_BUILD), hidden]
+		HRESULT Build([out, retval] LONG* pValue);
+		/// \brief <em>Retrieves the trackbar channel's height</em>
+		///
+		/// Retrieves the trackbar channel's height in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa ChannelLeft, ChannelTop, ChannelWidth, SliderHeight
+		[propget, id(DISPID_TRACKBARCTL_CHANNELHEIGHT), helpstring("Retrieves the trackbar channel's height in pixels."), nonbrowsable]
+		HRESULT ChannelHeight([out, retval] OLE_YSIZE_PIXELS* pValue);
+		/// \brief <em>Retrieves the x-coordinate of the trackbar channel's position</em>
+		///
+		/// Retrieves the distance between the trackbar channel's left border and the left border of the
+		/// control's client area in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa ChannelHeight, ChannelTop, ChannelWidth, SliderLeft
+		[propget, id(DISPID_TRACKBARCTL_CHANNELLEFT), helpstring("Retrieves the distance between the trackbar channel's left border and the left border of the control's client area in pixels."), nonbrowsable]
+		HRESULT ChannelLeft([out, retval] OLE_XPOS_PIXELS* pValue);
+		/// \brief <em>Retrieves the y-coordinate of the trackbar channel's position</em>
+		///
+		/// Retrieves the distance between the trackbar channel's upper border and the upper border of the
+		/// control's client area in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa ChannelHeight, ChannelLeft, ChannelWidth, SliderTop
+		[propget, id(DISPID_TRACKBARCTL_CHANNELTOP), helpstring("Retrieves the distance between the trackbar channel's upper border and the upper border of the control's client area in pixels."), nonbrowsable]
+		HRESULT ChannelTop([out, retval] OLE_YPOS_PIXELS* pValue);
+		/// \brief <em>Retrieves the trackbar channel's width</em>
+		///
+		/// Retrieves the trackbar channel's width in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa ChannelHeight, ChannelLeft, ChannelTop, SliderWidth
+		[propget, id(DISPID_TRACKBARCTL_CHANNELWIDTH), helpstring("Retrieves the trackbar channel's width in pixels."), nonbrowsable]
+		HRESULT ChannelWidth([out, retval] OLE_XSIZE_PIXELS* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's character set</em>
+		///
+		///   Retrieves the control's character set (Unicode or ANSI). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_CHARSET), hidden]
+		HRESULT CharSet([out, retval] BSTR* pValue);
+		/// \brief <em>Controls the slider's current position</em>
+		///
+		/// Retrieves or sets the slider's current logical position.
+		///
+		/// \sa Minimum, Maximum, ShowSlider, AutoTickMarks, TickMarks, _ITrackBarEvents::PositionChanging,
+		///     _ITrackBarEvents::PositionChanged
+		[propget, id(DISPID_TRACKBARCTL_CURRENTPOSITION), helpstring("Retrieves or sets the slider's current logical position."), bindable, displaybind, requestedit, displaybind]
+		HRESULT CurrentPosition([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_CURRENTPOSITION), helpstring("Retrieves or sets the slider's current logical position."), bindable, displaybind, requestedit, displaybind]
+		HRESULT CurrentPosition([in] LONG newValue);
+		/// \brief <em>Controls which events are fired</em>
+		///
+		/// Retrieves or sets the events that won't be fired. Disabling events increases performance.
+		/// Any combination of the values defined by the \c DisabledEventsConstants enumeration is valid.
+		///
+		/// \sa DisabledEventsConstants
+		[propget, id(DISPID_TRACKBARCTL_DISABLEDEVENTS), helpstring("Retrieves or sets the events that won't be fired. Disabling events increases performance."), nonbrowsable]
+		HRESULT DisabledEvents([out, retval] DisabledEventsConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_DISABLEDEVENTS), helpstring("Retrieves or sets the events that won't be fired. Disabling events increases performance."), nonbrowsable]
+		HRESULT DisabledEvents([in] DisabledEventsConstants newValue);
+		/// \brief <em>Controls redrawing of the control</em>
+		///
+		/// Enables or disables automatic redrawing of the control. Disabling redraw while doing large changes
+		/// on the control may increase performance. If set to \c False, the control will redraw itself
+		/// automatically; otherwise not.
+		[propget, id(DISPID_TRACKBARCTL_DONTREDRAW), helpstring("Enables or disables automatic redrawing of the control.")]
+		HRESULT DontRedraw([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_DONTREDRAW), helpstring("Enables or disables automatic redrawing of the control.")]
+		HRESULT DontRedraw([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls the control's behavior in response to pressing the down arrow key</em>
+		///
+		/// Retrieves or sets how the control reacts to the down arrow key. If set to \c True, pressing the
+		/// down arrow key is handled like pressing the left arrow key and pressing the up arrow key is handled
+		/// like pressing the right arrow key. If set to \c False, pressing the down arrow key is handled like
+		/// pressing the right arrow key and pressing the up arrow key is handled like pressing the left arrow
+		/// key.
+		///
+		/// \remarks Requires comctl32.dll version 5.81 or higher.
+		///
+		/// \sa Orientation, _ITrackBarEvents::KeyDown
+		[propget, id(DISPID_TRACKBARCTL_DOWNISLEFT), helpstring("Retrieves or sets how the control reacts to the down arrow key. Requires comctl32.dll version 5.81 or higher.")]
+		HRESULT DownIsLeft([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_DOWNISLEFT), helpstring("Retrieves or sets how the control reacts to the down arrow key. Requires comctl32.dll version 5.81 or higher.")]
+		HRESULT DownIsLeft([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls whether the control accepts user input</em>
+		///
+		/// Enables or disables the control for user input. If set to \c True, it reacts to user input;
+		/// otherwise not.
+		[propget, id(DISPID_TRACKBARCTL_ENABLED), helpstring("Enables or disables the control for user input.")]
+		HRESULT Enabled([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_ENABLED), helpstring("Enables or disables the control for user input.")]
+		HRESULT Enabled([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls when the \c MouseHover event is fired</em>
+		///
+		/// Retrieves or sets the number of milliseconds the mouse cursor must be located over the
+		/// control's client area before the \c MouseHover event is fired. If set to -1, the system hover
+		/// time is used.
+		///
+		/// \sa _ITrackBarEvents::MouseHover
+		[propget, id(DISPID_TRACKBARCTL_HOVERTIME), helpstring("Retrieves or sets the number of milliseconds the mouse cursor must be located over the control's client area before the 'MouseHover' event is fired.")]
+		HRESULT HoverTime([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_HOVERTIME), helpstring("Retrieves or sets the number of milliseconds the mouse cursor must be located over the control's client area before the 'MouseHover' event is fired.")]
+		HRESULT HoverTime([in] LONG newValue);
+		/// \brief <em>Retrieves the control's window handle</em>
+		///
+		/// Retrieves the control's window handle.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa _ITrackBarEvents::RecreatedControlWindow, _ITrackBarEvents::DestroyedControlWindow
+		[propget, id(DISPID_TRACKBARCTL_HWND), helpstring("Retrieves the control's window handle."), nonbrowsable]
+		HRESULT hWnd([out, retval] OLE_HANDLE* pValue);
+		/// \brief <em>Specifies the bottom/right buddy window</em>
+		///
+		/// Retrieves or sets the window handle of the control's bottom or right buddy window (depending on the
+		/// control's orientation). Buddy windows are automatically displayed in a location relative to the
+		/// control's orientation (horizontal or vertical).
+		///
+		/// \sa hWndTopOrLeftBuddy
+		[propget, id(DISPID_TRACKBARCTL_HWNDBOTTOMORRIGHTBUDDY), helpstring("Retrieves or sets the window handle of the control's bottom or right buddy window (depending on the control's orientation)."), nonbrowsable]
+		HRESULT hWndBottomOrRightBuddy([out, retval] OLE_HANDLE* pValue);
+		[propput, id(DISPID_TRACKBARCTL_HWNDBOTTOMORRIGHTBUDDY), helpstring("Retrieves or sets the window handle of the control's bottom or right buddy window (depending on the control's orientation)."), nonbrowsable]
+		HRESULT hWndBottomOrRightBuddy([in] OLE_HANDLE newValue);
+		/// \brief <em>Specifies the associated tooltip control</em>
+		///
+		/// Retrieves or sets the tooltip control's window handle.
+		///
+		/// \remarks The previously set tooltip window does NOT get destroyed automatically.
+		///
+		/// \sa ToolTipPosition, _ITrackBarEvents::GetInfoTipText
+		[propget, id(DISPID_TRACKBARCTL_HWNDTOOLTIP), helpstring("Retrieves or sets the tooltip control's window handle."), nonbrowsable]
+		HRESULT hWndToolTip([out, retval] OLE_HANDLE* pValue);
+		[propput, id(DISPID_TRACKBARCTL_HWNDTOOLTIP), helpstring("Retrieves or sets the tooltip control's window handle."), nonbrowsable]
+		HRESULT hWndToolTip([in] OLE_HANDLE newValue);
+		/// \brief <em>Specifies the top/left buddy window</em>
+		///
+		/// Retrieves or sets the window handle of the control's top or left buddy window (depending on the
+		/// control's orientation). Buddy windows are automatically displayed in a location relative to the
+		/// control's orientation (horizontal or vertical).
+		///
+		/// \sa hWndBottomOrRightBuddy
+		[propget, id(DISPID_TRACKBARCTL_HWNDTOPORLEFTBUDDY), helpstring("Retrieves or sets the window handle of the control's top or left buddy window (depending on the control's orientation)."), nonbrowsable]
+		HRESULT hWndTopOrLeftBuddy([out, retval] OLE_HANDLE* pValue);
+		[propput, id(DISPID_TRACKBARCTL_HWNDTOPORLEFTBUDDY), helpstring("Retrieves or sets the window handle of the control's top or left buddy window (depending on the control's orientation)."), nonbrowsable]
+		HRESULT hWndTopOrLeftBuddy([in] OLE_HANDLE newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's release type</em>
+		///
+		///   Retrieves the control's release type. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze. If set to
+		///   \c True, the control was compiled for release; otherwise it was compiled for debugging.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_ISRELEASE), hidden]
+		HRESULT IsRelease([out, retval] VARIANT_BOOL* pValue);
+		/// \brief <em>Specifies the distance that the slider moves in one large step</em>
+		///
+		/// Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to
+		/// keyboard input from keys like [PageUp] and [PageDown] and mouse input, such as clicks in the
+		/// trackbar's channel. If set to -1, the system's default setting is used.
+		///
+		/// \sa SmallStepWidth, CurrentPosition
+		[propget, id(DISPID_TRACKBARCTL_LARGESTEPWIDTH), helpstring("Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to keyboard input from keys like [PageUp] and [PageDown] and mouse input, such as clicks in the trackbar's channel.")]
+		HRESULT LargeStepWidth([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_LARGESTEPWIDTH), helpstring("Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to keyboard input from keys like [PageUp] and [PageDown] and mouse input, such as clicks in the trackbar's channel.")]
+		HRESULT LargeStepWidth([in] LONG newValue);
+		/// \brief <em>Specifies the slider's maximum position</em>
+		///
+		/// Retrieves or sets the slider's maximum logical position.
+		///
+		/// \sa Minimum, CurrentPosition, ShowSlider
+		[propget, id(DISPID_TRACKBARCTL_MAXIMUM), helpstring("Retrieves or sets the slider's maximum logical position.")]
+		HRESULT Maximum([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_MAXIMUM), helpstring("Retrieves or sets the slider's maximum logical position.")]
+		HRESULT Maximum([in] LONG newValue);
+		/// \brief <em>Specifies the slider's minimum position</em>
+		///
+		/// Retrieves or sets the slider's minimum logical position.
+		///
+		/// \sa Maximum, CurrentPosition, ShowSlider
+		[propget, id(DISPID_TRACKBARCTL_MINIMUM), helpstring("Retrieves or sets the slider's minimum logical position.")]
+		HRESULT Minimum([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_MINIMUM), helpstring("Retrieves or sets the slider's minimum logical position.")]
+		HRESULT Minimum([in] LONG newValue);
+		/// \brief <em>Controls the control's mouse cursor</em>
+		///
+		/// Retrieves or sets a user-defined mouse cursor. It's used if \c MousePointer is set to
+		/// \c mpCustom.
+		///
+		/// \sa MousePointer, MousePointerConstants
+		[propget, id(DISPID_TRACKBARCTL_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([out, retval] IPictureDisp** ppMouseIcon);
+		[propput, id(DISPID_TRACKBARCTL_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([in] IPictureDisp* pNewMouseIcon);
+		[propputref, id(DISPID_TRACKBARCTL_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([in] IPictureDisp* pNewMouseIcon);
+		/// \brief <em>Controls the control's mouse cursor</em>
+		///
+		/// Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the
+		/// control's client area. Any of the values defined by the \c MousePointerConstants enumeration
+		/// is valid.
+		///
+		/// \sa MouseIcon, MousePointerConstants
+		[propget, id(DISPID_TRACKBARCTL_MOUSEPOINTER), helpstring("Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the control's client area.")]
+		HRESULT MousePointer([out, retval] MousePointerConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_MOUSEPOINTER), helpstring("Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the control's client area.")]
+		HRESULT MousePointer([in] MousePointerConstants newValue);
+		/// \brief <em>Controls the control's orientation</em>
+		///
+		/// Retrieves or sets the control's orientation. Any of the values defined by the
+		/// \c OrientationConstants enumeration is valid.
+		///
+		/// \sa OrientationConstants
+		[propget, id(DISPID_TRACKBARCTL_ORIENTATION), helpstring("Retrieves or sets the control's orientation.")]
+		HRESULT Orientation([out, retval] OrientationConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_ORIENTATION), helpstring("Retrieves or sets the control's orientation.")]
+		HRESULT Orientation([in] OrientationConstants newValue);
+		/// \brief <em>Specifies whether the \c ContextMenu event can be invoked using the keyboard</em>
+		///
+		/// Retrieves or sets whether the control fires the \c ContextMenu event if the user presses
+		/// [SHIFT]+[F10] or [WINDOWS CONTEXTMENU]. If set to \c True, the events get fired; otherwise not.
+		///
+		/// \sa _ITrackBarEvents::ContextMenu
+		[propget, id(DISPID_TRACKBARCTL_PROCESSCONTEXTMENUKEYS), helpstring("Retrieves or sets whether the control fires the 'ContextMenu' event if the user presses [SHIFT]+[F10] or [WINDOWS CONTEXTMENU].")]
+		HRESULT ProcessContextMenuKeys([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_PROCESSCONTEXTMENUKEYS), helpstring("Retrieves or sets whether the control fires the 'ContextMenu' event if the user presses [SHIFT]+[F10] or [WINDOWS CONTEXTMENU].")]
+		HRESULT ProcessContextMenuKeys([in] VARIANT_BOOL newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the name(s) of the control's programmer(s)</em>
+		///
+		///   Retrieves the name(s) of the control's programmer(s). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, IsRelease, Tester
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_PROGRAMMER), hidden]
+		HRESULT Programmer([out, retval] BSTR* pValue);
+		/// \brief <em>Specifies the selection range's end</em>
+		///
+		/// Retrieves or sets the ending logical position of the current selection range, if the
+		/// \c SelectionType property is set to \c stRangeSelection. Setting \c RangeSelectionEnd
+		/// <strong>and</strong> \c RangeSelectionStart to -1 clears the selection range.
+		///
+		/// \sa RangeSelectionStart, SelectionType, Maximum
+		[propget, id(DISPID_TRACKBARCTL_RANGESELECTIONEND), helpstring("Retrieves or sets the ending logical position of the current selection range, if the 'SelectionType' property is set to 'stRangeSelection'.")]
+		HRESULT RangeSelectionEnd([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_RANGESELECTIONEND), helpstring("Retrieves or sets the ending logical position of the current selection range, if the 'SelectionType' property is set to 'stRangeSelection'.")]
+		HRESULT RangeSelectionEnd([in] LONG newValue);
+		/// \brief <em>Specifies the selection range's start</em>
+		///
+		/// Retrieves or sets the starting logical position of the current selection range, if the
+		/// \c SelectionType property is set to \c stRangeSelection. Setting \c RangeSelectionEnd
+		/// <strong>and</strong> \c RangeSelectionStart to -1 clears the selection range.
+		///
+		/// \sa RangeSelectionEnd, SelectionType, Minimum
+		[propget, id(DISPID_TRACKBARCTL_RANGESELECTIONSTART), helpstring("Retrieves or sets the starting logical position of the current selection range, if the 'SelectionType' property is set to 'stRangeSelection'.")]
+		HRESULT RangeSelectionStart([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_RANGESELECTIONSTART), helpstring("Retrieves or sets the starting logical position of the current selection range, if the 'SelectionType' property is set to 'stRangeSelection'.")]
+		HRESULT RangeSelectionStart([in] LONG newValue);
+		/// \brief <em>Controls the control's behavior in drag'n'drop operations</em>
+		///
+		/// Retrieves or sets whether the control is registered as a target for OLE drag'n'drop. If set to
+		/// \c True, the control accepts OLE drag'n'drop actions; otherwise not.
+		///
+		/// \sa SupportOLEDragImages, _ITrackBarEvents::OLEDragEnter
+		[propget, id(DISPID_TRACKBARCTL_REGISTERFOROLEDRAGDROP), helpstring("Retrieves or sets whether the control is registered as a target for OLE drag'n'drop.")]
+		HRESULT RegisterForOLEDragDrop([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_REGISTERFOROLEDRAGDROP), helpstring("Retrieves or sets whether the control is registered as a target for OLE drag'n'drop.")]
+		HRESULT RegisterForOLEDragDrop([in] VARIANT_BOOL newValue);
+		/// \brief <em>Flags the control as using inversed logic</em>
+		///
+		/// Retrieves or sets whether the control is a "reversed" trackbar, where a smaller number indicates
+		/// "higher" and a larger number indicates "lower".
+		///
+		/// \remarks This property has no effect on the control. It's simply a flag that can be checked to
+		///          determine whether the control is normal or reversed.\n
+		///          Requires comctl32.dll version 5.80 or higher.
+		///
+		/// \sa Minimum, Maximum
+		[propget, id(DISPID_TRACKBARCTL_REVERSED), helpstring("Retrieves or sets whether the control is a \"reversed\" trackbar, where a smaller number indicates \"higher\" and a larger number indicates \"lower\". Requires comctl32.dll version 5.80 or higher.")]
+		HRESULT Reversed([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_REVERSED), helpstring("Retrieves or sets whether the control is a \"reversed\" trackbar, where a smaller number indicates \"higher\" and a larger number indicates \"lower\". Requires comctl32.dll version 5.80 or higher.")]
+		HRESULT Reversed([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls the control's right-to-left features</em>
+		///
+		/// Retrieves or sets the control's general layout. If set to \c True, the layout direction is
+		/// right to left; otherwise it is left to right.
+		///
+		/// \attention Changing this property destroys and recreates the control.
+		[propget, id(DISPID_TRACKBARCTL_RIGHTTOLEFTLAYOUT), helpstring("Retrieves or sets the control's general layout. Changing this property destroys and recreates the control window.")]
+		HRESULT RightToLeftLayout([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_RIGHTTOLEFTLAYOUT), helpstring("Retrieves or sets the control's general layout. Changing this property destroys and recreates the control window.")]
+		HRESULT RightToLeftLayout([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls how the user may select a value</em>
+		///
+		/// Retrieves or sets which kind of value selection the control allows. Any of the values defined by
+		/// the \c SelectionTypeConstants enumeration is valid.
+		///
+		/// \sa SelectionTypeConstants
+		[propget, id(DISPID_TRACKBARCTL_SELECTIONTYPE), helpstring("Retrieves or sets which kind of value selection the control allows.")]
+		HRESULT SelectionType([out, retval] SelectionTypeConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_SELECTIONTYPE), helpstring("Retrieves or sets which kind of value selection the control allows.")]
+		HRESULT SelectionType([in] SelectionTypeConstants newValue);
+		/// \brief <em>Specifies whether the control displays a slider</em>
+		///
+		/// Retrieves or sets whether the control displays a slider. If set to \c True, the slider is
+		/// displayed; otherwise not.
+		///
+		/// \sa SliderLength, CurrentPosition
+		[propget, id(DISPID_TRACKBARCTL_SHOWSLIDER), helpstring("Retrieves or sets whether the control displays a slider.")]
+		HRESULT ShowSlider([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_SHOWSLIDER), helpstring("Retrieves or sets whether the control displays a slider.")]
+		HRESULT ShowSlider([in] VARIANT_BOOL newValue);
+		/// \brief <em>Retrieves the slider's height</em>
+		///
+		/// Retrieves the slider's height in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa SliderLength, SliderLeft, SliderTop, SliderWidth, ChannelHeight
+		[propget, id(DISPID_TRACKBARCTL_SLIDERHEIGHT), helpstring("Retrieves the slider's height in pixels."), nonbrowsable]
+		HRESULT SliderHeight([out, retval] OLE_YSIZE_PIXELS* pValue);
+		/// \brief <em>Retrieves the x-coordinate of the slider's position</em>
+		///
+		/// Retrieves the distance between the slider's left border and the left border of the control's client
+		/// area in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa TickMarkPhysicalPosition, SliderHeight, SliderTop, SliderWidth, ChannelLeft
+		[propget, id(DISPID_TRACKBARCTL_SLIDERLEFT), helpstring("Retrieves the distance between the slider's left border and the left border of the control's client area in pixels."), nonbrowsable]
+		HRESULT SliderLeft([out, retval] OLE_XPOS_PIXELS* pValue);
+		/// \brief <em>Controls the slider's size</em>
+		///
+		/// Retrieves or sets the slider's length in pixels. If set to -1, the default length is used.
+		///
+		/// \sa SliderHeight, SliderLeft, SliderTop, SliderWidth, ShowSlider
+		[propget, id(DISPID_TRACKBARCTL_SLIDERLENGTH), helpstring("Retrieves or sets the slider's length in pixels.")]
+		HRESULT SliderLength([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_SLIDERLENGTH), helpstring("Retrieves or sets the slider's length in pixels.")]
+		HRESULT SliderLength([in] LONG newValue);
+		/// \brief <em>Retrieves the y-coordinate of the slider's position</em>
+		///
+		/// Retrieves the distance between the slider's upper border and the upper border of the control's
+		/// client area in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa TickMarkPhysicalPosition, SliderHeight, SliderLeft, SliderWidth, ChannelTop
+		[propget, id(DISPID_TRACKBARCTL_SLIDERTOP), helpstring("Retrieves the distance between the slider's upper border and the upper border of the control's client area in pixels."), nonbrowsable]
+		HRESULT SliderTop([out, retval] OLE_YPOS_PIXELS* pValue);
+		/// \brief <em>Retrieves the slider's width</em>
+		///
+		/// Retrieves the slider's width in pixels.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa SliderLength, SliderHeight, SliderLeft, SliderTop, ChannelWidth
+		[propget, id(DISPID_TRACKBARCTL_SLIDERWIDTH), helpstring("Retrieves the slider's width in pixels."), nonbrowsable]
+		HRESULT SliderWidth([out, retval] OLE_XSIZE_PIXELS* pValue);
+		/// \brief <em>Specifies the distance that the slider moves in one small step</em>
+		///
+		/// Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to
+		/// keyboard input from the arrow keys.
+		///
+		/// \sa LargeStepWidth, CurrentPosition
+		[propget, id(DISPID_TRACKBARCTL_SMALLSTEPWIDTH), helpstring("Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to keyboard input from the arrow keys.")]
+		HRESULT SmallStepWidth([out, retval] LONG* pValue);
+		[propput, id(DISPID_TRACKBARCTL_SMALLSTEPWIDTH), helpstring("Retrieves or sets the number of logical positions, that the trackbar's slider moves in response to keyboard input from the arrow keys.")]
+		HRESULT SmallStepWidth([in] LONG newValue);
+		/// \brief <em>Controls the control's behavior in drag'n'drop operations</em>
+		///
+		/// Retrieves or sets whether the control creates an \c IDropTargetHelper object, so that a drag image
+		/// can be displayed during OLE drag'n'drop. If set to \c True, the control creates the object;
+		/// otherwise not.
+		///
+		/// \remarks Requires shell32.dll version 5.0 or higher.
+		///
+		/// \sa RegisterForOLEDragDrop, FinishOLEDragDrop,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms646238.aspx">IDropTargetHelper</a>
+		[propget, id(DISPID_TRACKBARCTL_SUPPORTOLEDRAGIMAGES), helpstring("Retrieves or sets whether the control creates an 'IDropTargetHelper' object, so that a drag image can be displayed during OLE drag'n'drop. Requires shell32.dll version 5.0 or higher.")]
+		HRESULT SupportOLEDragImages([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_SUPPORTOLEDRAGIMAGES), helpstring("Retrieves or sets whether the control creates an 'IDropTargetHelper' object, so that a drag image can be displayed during OLE drag'n'drop. Requires shell32.dll version 5.0 or higher.")]
+		HRESULT SupportOLEDragImages([in] VARIANT_BOOL newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the name(s) of the control's tester(s)</em>
+		///
+		///   Retrieves the name(s) of the control's tester(s). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, IsRelease, Programmer
+		/// \endif
+		[propget, id(DISPID_TRACKBARCTL_TESTER), hidden]
+		HRESULT Tester([out, retval] BSTR* pValue);
+		/// \brief <em>Retrieves a tick mark's physical position</em>
+		///
+		/// Retrieves the specified tick mark's physical position (in pixels) relative to the control's left
+		/// or top border (depending on the setting of the \c Orientation property).
+		///
+		/// \param[in] tickMark The zero-based index of the tick mark for which to retrieve the position.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa TickMarks, TickMarksPosition, Orientation
+		[propget, id(DISPID_TRACKBARCTL_TICKMARKPHYSICALPOSITION), helpstring("Retrieves the specified tick mark's physical position (in pixels) relative to the control's left or top border (depending on the setting of the 'Orientation' property)."), nonbrowsable]
+		HRESULT TickMarkPhysicalPosition([in] LONG tickMark, [out, retval] LONG* pValue);
+		/// \brief <em>Controls the position of each tick mark</em>
+		///
+		/// Retrieves or sets the control's tick marks. The property expects a \c Variant containing an array
+		/// of integer values, each specifying a tick mark's position.
+		///
+		/// \remarks The tick marks for the slider's minimum and maximum logical positions are always displayed
+		///          and don't need to be included in the array.
+		///
+		/// \sa AutoTickMarks, TickMarksPosition
+		[propget, id(DISPID_TRACKBARCTL_TICKMARKS), helpstring("Retrieves or sets the control's tick marks. The property expects a 'Variant' containing an array of integer values, each specifying a tick mark's position."), nonbrowsable]
+		HRESULT TickMarks([out, retval] VARIANT* pValue);
+		[propput, id(DISPID_TRACKBARCTL_TICKMARKS), helpstring("Retrieves or sets the control's tick marks. The property expects a 'Variant' containing an array of integer values, each specifying a tick mark's position."), nonbrowsable]
+		HRESULT TickMarks([in] VARIANT newValue);
+		/// \brief <em>Controls the position of the control's tick marks</em>
+		///
+		/// Retrieves or sets the position at which to display tick marks. Any of the values defined by the
+		/// \c TickMarksPositionConstants enumeration is valid.
+		///
+		/// \sa TickMarks, TickMarkPhysicalPosition, ToolTipPosition, TickMarksPositionConstants
+		[propget, id(DISPID_TRACKBARCTL_TICKMARKSPOSITION), helpstring("Retrieves or sets the position at which to display tick marks.")]
+		HRESULT TickMarksPosition([out, retval] TickMarksPositionConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_TICKMARKSPOSITION), helpstring("Retrieves or sets the position at which to display tick marks.")]
+		HRESULT TickMarksPosition([in] TickMarksPositionConstants newValue);
+		/// \brief <em>Controls the position of the control's tooltip</em>
+		///
+		/// Retrieves or sets the position at which to display tooltips. Any of the values defined by the
+		/// \c ToolTipPositionConstants enumeration is valid.
+		///
+		/// \sa hWndToolTip, TickMarksPosition, _ITrackBarEvents::GetInfoTipText, ToolTipPositionConstants
+		[propget, id(DISPID_TRACKBARCTL_TOOLTIPPOSITION), helpstring("Retrieves or sets the position at which to display tooltips.")]
+		HRESULT ToolTipPosition([out, retval] ToolTipPositionConstants* pValue);
+		[propput, id(DISPID_TRACKBARCTL_TOOLTIPPOSITION), helpstring("Retrieves or sets the position at which to display tooltips.")]
+		HRESULT ToolTipPosition([in] ToolTipPositionConstants newValue);
+		/// \brief <em>Retrieves the control's version</em>
+		///
+		/// \remarks This property is read-only.
+		[propget, id(DISPID_TRACKBARCTL_VERSION), helpstring("Retrieves the control's version."), nonbrowsable]
+		HRESULT Version([out, retval] BSTR* pValue);
+
+		/// \brief <em>Displays the control's credits</em>
+		///
+		/// Displays some information about this control and its author.
+		[id(DISPID_TRACKBARCTL_ABOUT), helpstring("Displays some information about this control and its author.")]
+		HRESULT About(void);
+		/// \brief <em>Loads the control's settings from the specified file</em>
+		///
+		/// \param[in] file The file to read from.
+		///
+		/// \return \c True if the settings could be loaded; otherwise \c False.
+		///
+		/// \sa SaveSettingsToFile
+		[id(DISPID_TRACKBARCTL_LOADSETTINGSFROMFILE), helpstring("Loads the control's settings from the specified file.")]
+		HRESULT LoadSettingsFromFile([in] BSTR file, [out, retval] VARIANT_BOOL* pSucceeded);
+		/// \brief <em>Advises the control to redraw itself</em>
+		[id(DISPID_TRACKBARCTL_REFRESH), helpstring("Advises the control to redraw itself.")]
+		HRESULT Refresh(void);
+		/// \brief <em>Saves the control's settings to the specified file</em>
+		///
+		/// \param[in] file The file to write to.
+		///
+		/// \return \c True if the settings could be saved; otherwise \c False.
+		///
+		/// \sa LoadSettingsFromFile
+		[id(DISPID_TRACKBARCTL_SAVESETTINGSTOFILE), helpstring("Saves the control's settings to the specified file.")]
+		HRESULT SaveSettingsToFile([in] BSTR file, [out, retval] VARIANT_BOOL* pSucceeded);
+
+		/// \brief <em>Specifies whether the control intercepts double clicks</em>
+		///
+		/// Enables or disables double clicks. If set to \c True, double clicks are accepted; otherwise all
+		/// clicks are handled as single clicks.
+		///
+		/// \sa _ITrackBarEvents::DblClick, _ITrackBarEvents::MDblClick, _ITrackBarEvents::RDblClick,
+		///     _ITrackBarEvents::XDblClick
+		[propget, id(DISPID_TRACKBARCTL_DETECTDOUBLECLICKS), helpstring("Enables or disables double clicks.")]
+		HRESULT DetectDoubleClicks([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_TRACKBARCTL_DETECTDOUBLECLICKS), helpstring("Enables or disables double clicks.")]
+		HRESULT DetectDoubleClicks([in] VARIANT_BOOL newValue);
+
+		/// \brief <em>Finishes a pending drop operation</em>
+		///
+		/// During a drag'n'drop operation the drag image is displayed until the \c OLEDragDrop event has been
+		/// handled. This order is intended by Microsoft Windows. However, if a message box is displayed from
+		/// within the \c OLEDragDrop event, or the drop operation cannot be performed asynchronously and takes
+		/// a long time, it may be desirable to remove the drag image earlier.\n
+		/// This method will break the intended order and finish the drag'n'drop operation (including removal
+		/// of the drag image) immediately.
+		///
+		/// \remarks This method will fail if not called from the \c OLEDragDrop event handler or if no drag
+		///          images are used.
+		///
+		/// \sa _ITrackBarEvents::OLEDragDrop, SupportOLEDragImages
+		[id(DISPID_TRACKBARCTL_FINISHOLEDRAGDROP), helpstring("Finishes a pending drop operation from within the 'OLEDragDrop' event, removing the drag image, but breaking the intended order. See documentation for details.")]
+		HRESULT FinishOLEDragDrop(void);
+	};
+
+
+	/// \interface _ITrackBarEvents
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The \c TrackBar class' events interface</em>
+	///
+	/// This interface defines all events the \c TrackBar class may raise.
+	///
+	/// \sa ITrackBar
+	[
+		uuid(D2AF86DB-4911-4ef2-BF03-25A25E6EB84B),
+		helpstring("ITrackBar-event-interface")
+	]
+	dispinterface _ITrackBarEvents
+	{
+		properties:
+		methods:
+			/// \brief <em>The slider's logical position has changed</em>
+			///
+			/// Will be fired if the slider's logical position has changed.
+			///
+			/// \param[in] changeType Specifies how the logical position was changed.
+			/// \param[in] newPosition The slider's new logical position.
+			///
+			/// \sa PositionChanging, ITrackBar::CurrentPosition, PositionChangeTypeConstants
+			[id(DISPID_TRACKBARCTLE_POSITIONCHANGED), helpstring("Will be fired if the slider's logical position has changed.")]
+			void PositionChanged(PositionChangeTypeConstants changeType, LONG newPosition);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the left mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbLeftButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This is the control's default event.\n
+			///          This event may be disabled.
+			///
+			/// \sa DblClick, MClick, RClick, XClick, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_CLICK), helpstring("Will be fired if the user clicks into the control's client area using the left mouse button. This event may be disabled.")]
+			void Click(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The context menu should be displayed</em>
+			///
+			/// Will be fired if the control's context menu should be displayed.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the menu's proposed position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the menu's proposed position relative to the
+			///            control's upper-left corner.
+			///
+			/// \sa RClick
+			[id(DISPID_TRACKBARCTLE_CONTEXTMENU), helpstring("Will be fired if the control's context menu should be displayed.")]
+			void ContextMenu(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>Custom drawing should be done here</em>
+			///
+			/// Will be fired after the control processed a \c NM_CUSTOMDRAW notification allowing custom
+			/// drawing of the control's content.
+			///
+			/// \param[in] controlPart Specified the part of the control, for which the event was raised for. Any
+			///            of the values defined by the \c CustomDrawControlPartConstants enumeration is valid.
+			/// \param[in] drawStage Specifies the stage of custom drawing this event was raised for. Any of
+			///            the values defined by the \c CustomDrawStageConstants enumeration is valid.
+			/// \param[in] controlState Specifies the control's current state (focused, selected etc.). Most of
+			///            the values defined by the \c CustomDrawControlStateConstants enumeration are valid.
+			/// \param[in] hDC The handle of the device context in which all drawing should take place.
+			/// \param[in] drawingRectangle The bounding rectangle of the area that must be drawn.
+			/// \param[in,out] furtherProcessing Controls further drawing. Most of the values defined by the
+			///                \c CustomDrawReturnValuesConstants enumeration are valid.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa RECTANGLE, CustomDrawControlPartConstants, CustomDrawStageConstants,
+			///     CustomDrawControlStateConstants, CustomDrawReturnValuesConstants, ITrackBar::DisabledEvents,
+			///     <a href="https://msdn.microsoft.com/en-us/library/ms650379.aspx">NM_CUSTOMDRAW (trackbar)</a>
+			[id(DISPID_TRACKBARCTLE_CUSTOMDRAW), helpstring("Will be fired after the control processed a 'NM_CUSTOMDRAW' notification allowing custom drawing of the control. This event may be disabled.")]
+			void CustomDraw(CustomDrawControlPartConstants controlPart, CustomDrawStageConstants drawStage, CustomDrawControlStateConstants controlState, LONG hDC, RECTANGLE* drawingRectangle, CustomDrawReturnValuesConstants* furtherProcessing);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the left mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbLeftButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa Click, MDblClick, RDblClick, XDblClick, ITrackBar::DetectDoubleClicks,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_DBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the left mouse button. This event may be disabled.")]
+			void DblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The control window was destroyed</em>
+			///
+			/// Will be fired after the control window was destroyed.
+			///
+			/// \param[in] hWnd The control's window handle.
+			///
+			/// \sa RecreatedControlWindow, ITrackBar::hWnd
+			[id(DISPID_TRACKBARCTLE_DESTROYEDCONTROLWINDOW), helpstring("Will be fired after the control window was destroyed.")]
+			void DestroyedControlWindow(LONG hWnd);
+			/// \brief <em>The control is about to show a tooltip and the text to display is required</em>
+			///
+			/// Will be fired if the control is about to popup a tooltip to display some information about the
+			/// current logical position and requests the text to display.
+			///
+			/// \param[in] maxInfoTipLength The maximum number of characters the info tip text may consist of.
+			/// \param[out] infoTipText Set this parameter to the text to display in the tooltip control.
+			/// \param[in,out] abortToolTip If set to \c True, the tooltip won't be displayed.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa ITrackBar::ToolTipPosition, ITrackBar::hWndToolTip, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_GETINFOTIPTEXT), helpstring("Will be fired if the control is about to popup a tooltip to display some information about the current logical position and requests the text to display. This event may be disabled.")]
+			void GetInfoTipText(LONG maxInfoTipLength, BSTR* infoTipText, VARIANT_BOOL* abortToolTip);
+			/// \brief <em>A key was pressed while the control has the focus</em>
+			///
+			/// Will be fired if the user presses a key while the control has the focus.
+			///
+			/// \param[in,out] keyCode The pressed key. Any of the values defined by VB's
+			///                \c KeyCodeConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			///
+			/// \remarks You may set \c keyCode to 0 to eat the message.\n
+			///          This event may be disabled.
+			///
+			/// \sa KeyUp, KeyPress, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_KEYDOWN), helpstring("Will be fired if the user presses a key while the control has the focus. This event may be disabled.")]
+			void KeyDown(SHORT* keyCode, SHORT shift);
+			/// \brief <em>An alphanumeric key was pressed and released while the control has the focus</em>
+			///
+			/// Will be fired if the user presses and releases an alphanumeric key while the control has the
+			/// focus.
+			///
+			/// \param[in,out] keyAscii The pressed key's ASCII code.
+			///
+			/// \remarks You may set \c keyAscii to 0 to eat the message.\n
+			///          This event may be disabled.
+			///
+			/// \sa KeyDown, KeyUp, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_KEYPRESS), helpstring("Will be fired if the user presses and releases an alphanumeric key while the control has the focus. This event may be disabled.")]
+			void KeyPress(SHORT* keyAscii);
+			/// \brief <em>A key was released while the control has the focus</em>
+			///
+			/// Will be fired if the user releases a key while the control has the focus.
+			///
+			/// \param[in,out] keyCode The released key. Any of the values defined by VB's
+			///                \c KeyCodeConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			///
+			/// \remarks You may set \c keyCode to 0 to eat the message.\n
+			///          This event may be disabled.
+			///
+			/// \sa KeyDown, KeyPress, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_KEYUP), helpstring("Will be fired if the user releases a key while the control has the focus. This event may be disabled.")]
+			void KeyUp(SHORT* keyCode, SHORT shift);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the middle mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbMiddleButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MDblClick, Click, RClick, XClick, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MCLICK), helpstring("Will be fired if the user clicks into the control's client area using the middle mouse button. This event may be disabled.")]
+			void MClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the middle mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbMiddleButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MClick, DblClick, RDblClick, XDblClick, ITrackBar::DetectDoubleClicks,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the middle mouse button. This event may be disabled.")]
+			void MDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>A mouse button was pressed over the control's client area</em>
+			///
+			/// Will be fired if the user presses a mouse button while the mouse cursor is located over the
+			/// control's client area.
+			///
+			/// \param[in] button The pressed mouse button. Any of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseUp, Click, MClick, RClick, XClick, ExtendedMouseButtonConstants,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEDOWN), helpstring("Will be fired if the user presses a mouse button while the mouse cursor is located over the control's client area. This event may be disabled.")]
+			void MouseDown(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved into the control's client area</em>
+			///
+			/// Will be fired if the user moved the mouse cursor into the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseLeave, MouseHover, MouseMove, ExtendedMouseButtonConstants, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEENTER), helpstring("Will be fired if the user moved the mouse cursor into the control's client area. This event may be disabled.")]
+			void MouseEnter(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved into the control's client area a specified period of time before</em>
+			///
+			/// Will be fired if the mouse cursor has been located over the control's client area for the number
+			/// of milliseconds specified by the \c ITrackBar::HoverTime property.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseLeave, MouseMove, ITrackBar::HoverTime, ExtendedMouseButtonConstants,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEHOVER), helpstring("Will be fired if the mouse cursor has been located over the control's client area for the number of milliseconds specified by the 'HoverTime' property. This event may be disabled.")]
+			void MouseHover(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved out of the control's client area</em>
+			///
+			/// Will be fired if the user moves the mouse cursor out of the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseHover, MouseMove, ExtendedMouseButtonConstants, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSELEAVE), helpstring("Will be fired if the user moves the mouse cursor out of the control's client area. This event may be disabled.")]
+			void MouseLeave(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved over the control's client area</em>
+			///
+			/// Will be fired if the user moves the mouse cursor over the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseLeave, MouseDown, MouseUp, MouseWheel, ExtendedMouseButtonConstants,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEMOVE), helpstring("Will be fired if the user moves the mouse cursor over the control's client area. This event may be disabled.")]
+			void MouseMove(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>A mouse button was released over the control's client area</em>
+			///
+			/// Will be fired if the user releases a mouse button while the mouse cursor is located over the
+			/// control's client area.
+			///
+			/// \param[in] button The released mouse button. Any of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseDown, Click, MClick, RClick, XClick, ExtendedMouseButtonConstants,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEUP), helpstring("Will be fired if the user releases a mouse button while the mouse cursor is located over the control's client area. This event may be disabled.")]
+			void MouseUp(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse wheel was rotated over the control's client area</em>
+			///
+			/// Will be fired if the user rotates the mouse wheel over the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] scrollAxis Specifies whether the user intents to scroll vertically or horizontally.
+			///            Any of the values defined by the \c ScrollAxisConstants enumeration is valid.
+			/// \param[in] wheelDelta The distance the wheel has been rotated.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseMove, ExtendedMouseButtonConstants, ScrollAxisConstants, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_MOUSEWHEEL), helpstring("Will be fired if the user rotates the mouse wheel over the control's client area. This event may be disabled.")]
+			void MouseWheel(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y, ScrollAxisConstants scrollAxis, SHORT wheelDelta);
+			/// \brief <em>The data was dropped onto the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user completes the operation while the mouse cursor
+			/// is located over the control's client area.
+			///
+			/// \param[in] data The dropped data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target finally
+			///                executed.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks Don't forget to release any references that you hold to the data object.
+			///
+			/// \sa OLEDragEnter, OLEDragMouseMove, OLEDragLeave, MouseUp, ITrackBar::RegisterForOLEDragDrop,
+			///     ITrackBar::FinishOLEDragDrop, OLEDropEffectConstants
+			[id(DISPID_TRACKBARCTLE_OLEDRAGDROP), helpstring("Will be fired during OLE drag'n'drop if the user completes the operation while the mouse cursor is located over the control's client area.")]
+			void OLEDragDrop(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged into the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moved the mouse cursor into the control's
+			/// client area.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target wants
+			///                to be used on drop.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \sa OLEDragMouseMove, OLEDragLeave, OLEDragDrop, MouseEnter, ITrackBar::RegisterForOLEDragDrop,
+			///     OLEDropEffectConstants
+			[id(DISPID_TRACKBARCTLE_OLEDRAGENTER), helpstring("Will be fired during OLE drag'n'drop if the user moved the mouse cursor into the control's client area.")]
+			void OLEDragEnter(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged out of the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moves the mouse cursor out of the control's
+			/// client area or if the user canceled the drag'n'drop operation.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks Don't forget to release any references that you hold to the data object.
+			///
+			/// \sa OLEDragEnter, OLEDragMouseMove, OLEDragDrop, MouseLeave, ITrackBar::RegisterForOLEDragDrop
+			[id(DISPID_TRACKBARCTLE_OLEDRAGLEAVE), helpstring("Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's client area or if the user canceled the drag'n'drop operation.")]
+			void OLEDragLeave(IOLEDataObject* data, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged over the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's
+			/// client area.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target wants
+			///                to be used on drop.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \sa OLEDragEnter, OLEDragLeave, OLEDragDrop, MouseMove, ITrackBar::RegisterForOLEDragDrop,
+			///     OLEDropEffectConstants
+			[id(DISPID_TRACKBARCTLE_OLEDRAGMOUSEMOVE), helpstring("Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's client area.")]
+			void OLEDragMouseMove(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The slider's logical position is about to change</em>
+			///
+			/// Will be fired before the slider's logical position changes.
+			///
+			/// \param[in] changeType Specifies how the logical position is changed.
+			/// \param[in] newPosition The slider's new logical position.
+			/// \param[in,out] cancelChange If set to \c True, the position change is aborted, i. e. the slider's
+			///                logical position remains the same. In this case the \c PositionChanged event isn't
+			///                fired. If set to \c False, the position change is completed.
+			///
+			/// \remarks Requires comctl32.dll version 6.10 or higher.
+			///
+			/// \sa PositionChanged, ITrackBar::CurrentPosition, PositionChangeTypeConstants
+			[id(DISPID_TRACKBARCTLE_POSITIONCHANGING), helpstring("Will be fired before the slider's logical position changes. Requires comctl32.dll version 6.10 or higher.")]
+			void PositionChanging(PositionChangeTypeConstants changeType, LONG newPosition, VARIANT_BOOL* cancelChange);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the right mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbRightButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa ContextMenu, RDblClick, Click, MClick, XClick, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_RCLICK), helpstring("Will be fired if the user clicks into the control's client area using the right mouse button. This event may be disabled.")]
+			void RClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the right mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbRightButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa RClick, DblClick, MDblClick, XDblClick, ITrackBar::DetectDoubleClicks,
+			///     ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_RDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the right mouse button. This event may be disabled.")]
+			void RDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The control window was recreated</em>
+			///
+			/// Will be fired after the control window was destroyed and recreated.\n
+			/// Some properties can't be changed after the control window was created. If such a property is
+			/// changed and the control window already exists, it is destroyed and recreated.
+			///
+			/// \param[in] hWnd The control's window handle.
+			///
+			/// \sa DestroyedControlWindow, ITrackBar::hWnd
+			[id(DISPID_TRACKBARCTLE_RECREATEDCONTROLWINDOW), helpstring("Will be fired after the control window was destroyed and recreated.")]
+			void RecreatedControlWindow(LONG hWnd);
+			/// \brief <em>The control window was resized</em>
+			///
+			/// Will be fired after the control window was resized.
+			[id(DISPID_TRACKBARCTLE_RESIZEDCONTROLWINDOW), helpstring("Will be fired after the control window was resized.")]
+			void ResizedControlWindow(void);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using one of the extended mouse
+			/// buttons.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be a constant defined by the \c ExtendedMouseButtonConstants enumeration.
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa XDblClick, Click, MClick, RClick, ExtendedMouseButtonConstants, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_XCLICK), helpstring("Will be fired if the user clicks into the control's client area using one of the extended mouse buttons. This event may be disabled.")]
+			void XClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using one of the extended
+			/// mouse buttons.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            be a constant defined by the \c ExtendedMouseButtonConstants enumeration.
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa XClick, DblClick, MDblClick, RDblClick, ExtendedMouseButtonConstants,
+			///     ITrackBar::DetectDoubleClicks, ITrackBar::DisabledEvents
+			[id(DISPID_TRACKBARCTLE_XDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using one of the extended mouse buttons. This event may be disabled.")]
+			void XDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+	};
+
+
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The \c TrackBar class</em>
+	///
+	/// The control's main COM class. It implements the \c ITrackBar and
+	/// \c _ITrackBarEvents interfaces.
+	///
+	/// \sa ITrackBar, _ITrackBarEvents
+	[
+		uuid(DF2FFF2F-F1CA-4cde-AA5F-4D35EC71F227),
+		version(1.7),
+		helpstring("TrackBar Control 1.7 (ANSI)")
+	]
+	coclass TrackBar
+	{
+		[default] interface ITrackBar;
+		[default, source] dispinterface _ITrackBarEvents;
+	};
+
+
+	[
+		uuid(F2B28609-79D3-43e7-9C33-D9565E235AEC),
+		version(1.7),
+		noncreatable,
+		helpstring("CommonProperties Class 1.7 (ANSI)"),
+		hidden
+	]
+	coclass CommonProperties
+	{
+		[default] interface IUnknown;
+	};
+};

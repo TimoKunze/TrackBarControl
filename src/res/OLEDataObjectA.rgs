@@ -1,0 +1,25 @@
+HKCR
+{
+	TrackBarCtlA.OLEDataObject.1 = s 'TimoSoft OLEDataObject Class 1.7 (ANSI)'
+	{
+		CLSID = s '{3FBD0892-6402-4c2e-9348-4AED98408CB0}'
+	}
+	TrackBarCtlA.OLEDataObject = s 'TimoSoft OLEDataObject Class (ANSI)'
+	{
+		CLSID = s '{3FBD0892-6402-4c2e-9348-4AED98408CB0}'
+		CurVer = s 'TrackBarCtlA.OLEDataObject.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {3FBD0892-6402-4c2e-9348-4AED98408CB0} = s 'TimoSoft OLEDataObject Class (ANSI)'
+		{
+			ProgID = s 'TrackBarCtlA.OLEDataObject.1'
+			VersionIndependentProgID = s 'TrackBarCtlA.OLEDataObject'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{F65D51B5-B8DD-476a-85B7-3E26E69D7B3C}'
+		}
+	}
+}

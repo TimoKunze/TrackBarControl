@@ -1,0 +1,9 @@
+; TrackBarCtlA.def: Declares the module parameters. (ANSI version)
+
+LIBRARY      "TrackBarCtlA.ocx"
+
+EXPORTS
+	DllCanUnloadNow		PRIVATE
+	DllGetClassObject	PRIVATE
+	DllRegisterServer	PRIVATE
+	DllUnregisterServer	PRIVATE

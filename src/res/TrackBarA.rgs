@@ -1,0 +1,43 @@
+HKCR
+{
+	TrackBarCtlA.TrackBar.1 = s 'TimoSoft TrackBar Control 1.7 (ANSI)'
+	{
+		CLSID = s '{DF2FFF2F-F1CA-4cde-AA5F-4D35EC71F227}'
+		'Insertable'
+	}
+	TrackBarCtlA.TrackBar = s 'TimoSoft TrackBar Control 1.7 (ANSI)'
+	{
+		CLSID = s '{DF2FFF2F-F1CA-4cde-AA5F-4D35EC71F227}'
+		CurVer = s 'TrackBarCtlA.TrackBar.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {DF2FFF2F-F1CA-4cde-AA5F-4D35EC71F227} = s 'TimoSoft TrackBar Control 1.7 (ANSI)'
+		{
+			ProgID = s 'TrackBarCtlA.TrackBar.1'
+			VersionIndependentProgID = s 'TrackBarCtlA.TrackBar'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			ForceRemove 'Implemented Categories'
+			{
+				'{40FC6ED4-2438-11CF-A3DB-080036F12502}'
+				'{0DE86A57-2BAA-11CF-A229-00AA003D7352}'
+				'{0DE86A53-2BAA-11CF-A229-00AA003D7352}'
+				'{157083E1-2368-11cf-87B9-00AA006C8166}'
+			}
+			val AppID = s '%APPID%'
+			ForceRemove 'Control'
+			ForceRemove 'Insertable'
+			ForceRemove 'ToolboxBitmap32' = s '%MODULE%, 1'
+			'MiscStatus' = s '0'
+			{
+				'1' = s '%OLEMISC%'
+			}
+			'TypeLib' = s '{F65D51B5-B8DD-476a-85B7-3E26E69D7B3C}'
+			'Version' = s '1.7'
+		}
+	}
+}
