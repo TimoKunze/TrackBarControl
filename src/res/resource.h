@@ -10,10 +10,10 @@
 #define VERSION_MINOR																7
 #define VERSION_REVISION1														3
 #define VERSION_REVISION2														0
-#define VERSION_BUILD																116
-#define STRFILEVERSION															"1.7.3.116"
+#define VERSION_BUILD																117
+#define STRFILEVERSION															"1.7.3.117"
 #define STRPRODUCTVERSION														"1.7"
-#define STRTIMESTAMP																"2018/01/11 23:51:04"
+#define STRTIMESTAMP																"2018/01/16 21:01:04"
 
 #define IDB_TRACKBAR																1
 #define IDB_ABOUT																		2
