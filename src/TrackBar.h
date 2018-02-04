@@ -28,7 +28,7 @@
 #include "ICategorizeProperties.h"
 #include "ICreditsProvider.h"
 #include "helpers.h"
-#include "CWindowEx.h"
+#include "CWindowEx2.h"
 #include "EnumOLEVERB.h"
 #include "PropertyNotifySinkImpl.h"
 #include "AboutDlg.h"

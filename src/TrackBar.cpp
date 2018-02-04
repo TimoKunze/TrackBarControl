@@ -1649,7 +1649,7 @@ STDMETHODIMP TrackBar::get_ChannelHeight(OLE_YSIZE_PIXELS* pValue)
 	}
 
 	if(IsWindow()) {
-		WTL::CRect channelRectangle;
+		CRect channelRectangle;
 		SendMessage(TBM_GETCHANNELRECT, 0, reinterpret_cast<LPARAM>(&channelRectangle));
 		*pValue = channelRectangle.Height();
 	} else {
@@ -1700,7 +1700,7 @@ STDMETHODIMP TrackBar::get_ChannelWidth(OLE_XSIZE_PIXELS* pValue)
 	}
 
 	if(IsWindow()) {
-		WTL::CRect channelRectangle;
+		CRect channelRectangle;
 		SendMessage(TBM_GETCHANNELRECT, 0, reinterpret_cast<LPARAM>(&channelRectangle));
 		*pValue = channelRectangle.Width();
 	} else {
@@ -2554,7 +2554,7 @@ STDMETHODIMP TrackBar::get_SliderHeight(OLE_YSIZE_PIXELS* pValue)
 	}
 
 	if(IsWindow()) {
-		WTL::CRect sliderRectangle;
+		CRect sliderRectangle;
 		SendMessage(TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&sliderRectangle));
 		*pValue = sliderRectangle.Height();
 	} else {
@@ -2592,7 +2592,7 @@ STDMETHODIMP TrackBar::get_SliderLength(LONG* pValue)
 		if(style & TBS_FIXEDLENGTH) {
 			properties.sliderLength = SendMessage(TBM_GETTHUMBLENGTH, 0, 0);
 		} else {
-			WTL::CRect sliderRectangle;
+			CRect sliderRectangle;
 			SendMessage(TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&sliderRectangle));
 			if(style & TBS_VERT) {
 				properties.sliderLength = sliderRectangle.Width();
@@ -2651,7 +2651,7 @@ STDMETHODIMP TrackBar::get_SliderWidth(OLE_XSIZE_PIXELS* pValue)
 	}
 
 	if(IsWindow()) {
-		WTL::CRect sliderRectangle;
+		CRect sliderRectangle;
 		SendMessage(TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&sliderRectangle));
 		*pValue = sliderRectangle.Width();
 	} else {
@@ -2736,13 +2736,13 @@ STDMETHODIMP TrackBar::get_TickMarkPhysicalPosition(LONG tickMark, LONG* pValue)
 		         value to the minimum/maximum without redraw, retrieve the slider's rectangle and reset the
 		         position. Then use the rectangle to calculate the tick mark's position. */
 		if(tickMark == 0) {
-			CWindowEx(*this).InternalSetRedraw(FALSE);
+			CWindowEx2(*this).InternalSetRedraw(FALSE);
 			EnterSilentPositionChangesSection();
 
 			LONG currentPosition = SendMessage(TBM_GETPOS, 0, 0);
 			SendMessage(TBM_SETPOS, TRUE, SendMessage(TBM_GETRANGEMIN, 0, 0));
 
-			WTL::CRect sliderRectangle;
+			CRect sliderRectangle;
 			SendMessage(TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&sliderRectangle));
 			if(GetStyle() & TBS_VERT) {
 				*pValue = sliderRectangle.CenterPoint().y;
@@ -2753,15 +2753,15 @@ STDMETHODIMP TrackBar::get_TickMarkPhysicalPosition(LONG tickMark, LONG* pValue)
 			SendMessage(TBM_SETPOS, TRUE, currentPosition);
 
 			LeaveSilentPositionChangesSection();
-			CWindowEx(*this).InternalSetRedraw(TRUE);
+			CWindowEx2(*this).InternalSetRedraw(TRUE);
 		} else if(tickMark == (SendMessage(TBM_GETNUMTICS, 0, 0)) - 1) {
-			CWindowEx(*this).InternalSetRedraw(FALSE);
+			CWindowEx2(*this).InternalSetRedraw(FALSE);
 			EnterSilentPositionChangesSection();
 
 			LONG currentPosition = SendMessage(TBM_GETPOS, 0, 0);
 			SendMessage(TBM_SETPOS, TRUE, SendMessage(TBM_GETRANGEMAX, 0, 0));
 
-			WTL::CRect sliderRectangle;
+			CRect sliderRectangle;
 			SendMessage(TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&sliderRectangle));
 			if(GetStyle() & TBS_VERT) {
 				*pValue = sliderRectangle.CenterPoint().y;
@@ -2772,7 +2772,7 @@ STDMETHODIMP TrackBar::get_TickMarkPhysicalPosition(LONG tickMark, LONG* pValue)
 			SendMessage(TBM_SETPOS, TRUE, currentPosition);
 
 			LeaveSilentPositionChangesSection();
-			CWindowEx(*this).InternalSetRedraw(TRUE);
+			CWindowEx2(*this).InternalSetRedraw(TRUE);
 		} else {
 			*pValue = SendMessage(TBM_GETTICPOS, tickMark - 1, 0);
 		}
@@ -3503,7 +3503,7 @@ LRESULT TrackBar::OnSetCursor(UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lPar
 	BOOL setCursor = FALSE;
 
 	// Are we really over the control?
-	WTL::CRect clientArea;
+	CRect clientArea;
 	GetClientRect(&clientArea);
 	ClientToScreen(&clientArea);
 	DWORD position = GetMessagePos();
@@ -3615,7 +3615,7 @@ LRESULT TrackBar::OnWindowPosChanged(UINT /*message*/, WPARAM /*wParam*/, LPARAM
 {
 	LPWINDOWPOS pDetails = reinterpret_cast<LPWINDOWPOS>(lParam);
 
-	WTL::CRect windowRectangle = m_rcPos;
+	CRect windowRectangle = m_rcPos;
 	/* Ugly hack: We depend on this message being sent without SWP_NOMOVE at least once, but this requirement
 	              not always will be fulfilled. Fortunately pDetails seems to contain correct x and y values
 	              even if SWP_NOMOVE is set.
@@ -3728,7 +3728,7 @@ LRESULT TrackBar::OnReflectedCtlColorStatic(UINT /*message*/, WPARAM wParam, LPA
 		 */
 		/* NOTE: We have to do this on each WM_CTLCOLORSTATIC, because the parent window's appearance might
 		         have changed. */
-		WTL::CRect clientRectangle;
+		CRect clientRectangle;
 		::GetClientRect(reinterpret_cast<HWND>(lParam), &clientRectangle);
 
 		CDC memoryDC;
@@ -4053,9 +4053,9 @@ inline HRESULT TrackBar::Raise_ContextMenu(SHORT button, SHORT shift, OLE_XPOS_P
 			// the event was caused by the keyboard
 			if(properties.processContextMenuKeys) {
 				// propose the middle of the control's client rectangle as the menu's position
-				WTL::CRect clientRectangle;
+				CRect clientRectangle;
 				GetClientRect(&clientRectangle);
-				WTL::CPoint centerPoint = clientRectangle.CenterPoint();
+				CPoint centerPoint = clientRectangle.CenterPoint();
 				x = centerPoint.x;
 				y = centerPoint.y;
 			} else {
