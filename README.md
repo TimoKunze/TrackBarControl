@@ -1,6 +1,6 @@
 <p align=center>
-  <a href="https://github.com/TimoKunze/TrackBarControl/releases/tag/1.7.3">
-    <img alt="Release 1.7.3 Release" src="https://img.shields.io/badge/release-1.7.3-0688CB.svg">
+  <a href="https://github.com/TimoKunze/TrackBarControl/releases/tag/1.7.4">
+    <img alt="Release 1.7.4 Release" src="https://img.shields.io/badge/release-1.7.4-0688CB.svg">
   </a>
   <a href="https://github.com/TimoKunze/TrackBarControl/releases">
     <img alt="Download TrackBarControl" src="https://img.shields.io/badge/download-latest-0688CB.svg">
