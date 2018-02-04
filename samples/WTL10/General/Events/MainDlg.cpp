@@ -87,12 +87,12 @@ LRESULT CMainDlg::OnWindowPosChanged(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lP
 		LPWINDOWPOS pDetails = reinterpret_cast<LPWINDOWPOS>(lParam);
 
 		if((pDetails->flags & SWP_NOSIZE) == 0) {
-			WTL::CRect clientRectangle;
+			CRect clientRectangle;
 			GetClientRect(&clientRectangle);
-			WTL::CRect aboutButtonRectangle;
+			CRect aboutButtonRectangle;
 			controls.aboutButton.GetWindowRect(&aboutButtonRectangle);
 			ScreenToClient(&aboutButtonRectangle);
-			WTL::CRect controlRectangle;
+			CRect controlRectangle;
 			trackBarUContainerWnd.GetWindowRect(&controlRectangle);
 			ScreenToClient(&controlRectangle);
 
