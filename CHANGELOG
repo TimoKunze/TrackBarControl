@@ -1,3 +1,19 @@
+Version 1.7.5 - 21/08/2018
+
+- When dragging the control's thumb from position 0 to 2, the event order now will be as follows:
+		1) PositionChanging with change type pctBeginTrack, new position 1 (on thumb's first move)
+		2) PositionChanged with change type pctTracking, new position 1
+		3) PositionChanging with change type pctTracking, new position 2
+		4) PositionChanged with change type pctTracking, new position 2
+		5) PositionChanged with change type pctEndTrack, new position 2 (on releasing the mouse button)
+	Previously it has been:
+		1) PositionChanging with change type pctTracking, new position 1
+		2) PositionChanged with change type pctTracking, new position 1
+		3) PositionChanging with change type pctTracking, new position 2
+		4) PositionChanged with change type pctTracking, new position 2
+
+
+
 Version 1.7.4 - 04/02/2018
 
 - Upgraded to WTL 10.

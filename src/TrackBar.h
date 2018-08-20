@@ -3397,12 +3397,17 @@ protected:
 		///
 		/// \sa OnThemeChanged
 		UINT usingThemes : 1;
+		/// \brief <em>If TRUE, the control's thumb is being tracked</em>
+		///
+		/// \sa OnThumbPosChangingNotification, OnReflectedScroll, OnLButtonUp
+		UINT isTrackingThumb : 1;
 
 		Flags()
 		{
 			silentPositionChanges = 0;
 			uiActivationPending = FALSE;
 			usingThemes = FALSE;
+			isTrackingThumb = FALSE;
 		}
 	} flags;
 

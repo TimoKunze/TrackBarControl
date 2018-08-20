@@ -3307,6 +3307,13 @@ LRESULT TrackBar::OnLButtonUp(UINT /*message*/, WPARAM wParam, LPARAM lParam, BO
 	button = 1/*MouseButtonConstants.vbLeftButton*/;
 	Raise_MouseUp(button, shift, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 
+	if(flags.isTrackingThumb) {
+		flags.isTrackingThumb = FALSE;
+		LONG currentPosition = SendMessage(TBM_GETPOS, 0, 0);
+		properties.currentPosition = currentPosition;
+		Raise_PositionChanged(pctEndTrack, currentPosition);
+	}
+
 	return 0;
 }
 
@@ -3788,10 +3795,11 @@ LRESULT TrackBar::OnReflectedScroll(UINT /*message*/, WPARAM wParam, LPARAM /*lP
 		switch(LOWORD(wParam)) {
 			case TB_THUMBTRACK:
 				// NOTE: HIWORD(wParam) is the new position, but it's only 16 bit wide.
-				changeType = pctBeginTrack;
+				changeType = pctTracking;
 				break;
 			case TB_ENDTRACK:
 				changeType = pctEndTrack;
+				flags.isTrackingThumb = FALSE;
 				break;
 			case TB_THUMBPOSITION:
 				changeType = pctTracking;
@@ -3873,7 +3881,14 @@ LRESULT TrackBar::OnThumbPosChangingNotification(int /*controlID*/, LPNMHDR pNot
 		PositionChangeTypeConstants changeType = pctJumpToPosition;
 		switch(pDetails->nReason) {
 			case TB_THUMBTRACK:
-				changeType = pctBeginTrack;
+				if(flags.isTrackingThumb) {
+					changeType = pctTracking;
+				} else if(GetAsyncKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON) & 0x8000) {
+					changeType = pctBeginTrack;
+					flags.isTrackingThumb = TRUE;
+				} else {
+					changeType = pctTracking;
+				}
 				break;
 			case TB_ENDTRACK:
 				changeType = pctEndTrack;
